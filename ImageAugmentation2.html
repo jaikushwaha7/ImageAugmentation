@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Augmentation: A Comprehensive Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        h1 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .tab-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-button:hover, .tab-button.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .content-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            color: #444;
+            margin: 30px 0 15px 0;
+            position: relative;
+        }
+
+        .technique-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .technique-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .technique-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .technique-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .technique-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .code-block::before {
+            content: 'Python';
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 12px;
+            color: #a0aec0;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            margin: 20px 0;
+        }
+
+        .demo-area {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .demo-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .demo-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .image-container {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0),
+                        linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            border-radius: 15px;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #666;
+            border: 3px dashed #ccc;
+            transition: all 0.3s ease;
+        }
+
+        .benefits-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .benefit-item {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .benefit-item:hover {
+            transform: scale(1.05);
+        }
+
+        .benefit-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .technique-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Image Augmentation</h1>
+            <p class="subtitle">Enhance Your Machine Learning Models with Data Augmentation Techniques</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="tab-button active" onclick="showTab('overview')">Overview</button>
+            <button class="tab-button" onclick="showTab('techniques')">Techniques</button>
+            <button class="tab-button" onclick="showTab('implementation')">Implementation</button>
+            <button class="tab-button" onclick="showTab('demo')">Interactive Demo</button>
+            <button class="tab-button" onclick="showTab('best-practices')">Best Practices</button>
+        </div>
+
+        <div id="overview" class="content-section active">
+            <h2>What is Image Augmentation?</h2>
+            <p>Image augmentation is a technique used in machine learning and computer vision to artificially expand the size and diversity of training datasets by applying various transformations to existing images. This process helps improve model performance, reduce overfitting, and increase the robustness of neural networks.</p>
+
+            <div class="highlight">
+                <h3>🎯 Key Benefits</h3>
+                <p>Image augmentation addresses the common problem of limited training data in deep learning by creating variations of existing images without collecting new data.</p>
+            </div>
+
+            <div class="benefits-list">
+                <div class="benefit-item">
+                    <div class="benefit-icon">📈</div>
+                    <h4>Improved Generalization</h4>
+                    <p>Models trained with augmented data perform better on unseen images</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon">🛡️</div>
+                    <h4>Reduced Overfitting</h4>
+                    <p>Increases dataset diversity to prevent memorization</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon">💰</div>
+                    <h4>Cost-Effective</h4>
+                    <p>Expands datasets without expensive data collection</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon">🎨</div>
+                    <h4>Enhanced Robustness</h4>
+                    <p>Makes models invariant to common transformations</p>
+                </div>
+            </div>
+
+            <h3>When to Use Image Augmentation</h3>
+            <p>Image augmentation is particularly beneficial when:</p>
+            <ul style="margin: 20px 0; padding-left: 20px;">
+                <li>You have a limited dataset (less than 1000 images per class)</li>
+                <li>Your model is overfitting to the training data</li>
+                <li>You want to improve model robustness to variations in lighting, orientation, or scale</li>
+                <li>You're working with medical images, satellite imagery, or other specialized domains where data is scarce</li>
+            </ul>
+        </div>
+
+        <div id="techniques" class="content-section">
+            <h2>Augmentation Techniques</h2>
+            <p>There are numerous image augmentation techniques, each serving different purposes and suitable for different types of data and tasks.</p>
+
+            <h3>Geometric Transformations</h3>
+            <div class="technique-grid">
+                <div class="technique-card">
+                    <div class="technique-title">🔄 Rotation</div>
+                    <p>Rotates images by a specified angle (typically -30° to +30°) to make models invariant to object orientation.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🔍 Scaling/Zoom</div>
+                    <p>Randomly zooms in or out of images to help models recognize objects at different scales.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">📐 Shearing</div>
+                    <p>Applies shear transformation to create slanted versions of images, useful for text recognition tasks.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">↔️ Flipping</div>
+                    <p>Horizontally or vertically flips images. Horizontal flipping is common for natural images.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">📍 Translation</div>
+                    <p>Shifts images horizontally or vertically while maintaining the same dimensions.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🌀 Perspective Transform</div>
+                    <p>Changes the perspective of images to simulate different viewing angles.</p>
+                </div>
+            </div>
+
+            <h3>Photometric Transformations</h3>
+            <div class="technique-grid">
+                <div class="technique-card">
+                    <div class="technique-title">☀️ Brightness Adjustment</div>
+                    <p>Randomly adjusts image brightness to simulate different lighting conditions.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🌈 Contrast Modification</div>
+                    <p>Changes image contrast to help models adapt to varying image quality.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🎨 Hue/Saturation</div>
+                    <p>Modifies color properties to make models robust to color variations.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">📺 Gamma Correction</div>
+                    <p>Adjusts gamma values to simulate different display characteristics.</p>
+                </div>
+            </div>
+
+            <h3>Advanced Techniques</h3>
+            <div class="technique-grid">
+                <div class="technique-card">
+                    <div class="technique-title">✂️ Cutout/Random Erasing</div>
+                    <p>Randomly masks rectangular regions to force models to focus on multiple features.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🎭 Mixup</div>
+                    <p>Creates new training examples by linearly combining two images and their labels.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">📋 CutMix</div>
+                    <p>Combines patches from different images while maintaining proportional labels.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🔧 AutoAugment</div>
+                    <p>Uses reinforcement learning to automatically discover optimal augmentation policies.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="implementation" class="content-section">
+            <h2>Implementation Examples</h2>
+            <p>Here are practical examples of implementing image augmentation using popular libraries.</p>
+
+            <h3>Using TensorFlow/Keras</h3>
+            <div class="code-block">
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import tensorflow as tf
+
+# Create an ImageDataGenerator with various augmentations
+datagen = ImageDataGenerator(
+    rotation_range=20,          # Random rotation up to 20 degrees
+    width_shift_range=0.2,      # Random horizontal shift
+    height_shift_range=0.2,     # Random vertical shift
+    shear_range=0.2,           # Random shear transformation
+    zoom_range=0.2,            # Random zoom
+    horizontal_flip=True,       # Random horizontal flip
+    brightness_range=[0.8, 1.2], # Random brightness
+    fill_mode='nearest'         # Fill strategy for new pixels
+)
+
+# Apply augmentation to training data
+train_generator = datagen.flow_from_directory(
+    'train_data/',
+    target_size=(224, 224),
+    batch_size=32,
+    class_mode='categorical'
+)
+            </div>
+
+            <h3>Using PyTorch and Torchvision</h3>
+            <div class="code-block">
+import torch
+from torchvision import transforms
+from torchvision.datasets import ImageFolder
+
+# Define augmentation pipeline
+transform = transforms.Compose([
+    transforms.RandomResizedCrop(224),
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomRotation(degrees=15),
+    transforms.ColorJitter(
+        brightness=0.2,
+        contrast=0.2,
+        saturation=0.2,
+        hue=0.1
+    ),
+    transforms.RandomAffine(
+        degrees=0,
+        translate=(0.1, 0.1),
+        scale=(0.9, 1.1)
+    ),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+])
+
+# Apply to dataset
+dataset = ImageFolder('train_data/', transform=transform)
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
+            </div>
+
+            <h3>Using Albumentations (Advanced)</h3>
+            <div class="code-block">
+import albumentations as A
+import cv2
+
+# Define advanced augmentation pipeline
+transform = A.Compose([
+    A.RandomResizedCrop(width=224, height=224, scale=(0.8, 1.0)),
+    A.HorizontalFlip(p=0.5),
+    A.OneOf([
+        A.RandomBrightnessContrast(p=1),
+        A.RandomGamma(p=1),
+        A.HueSaturationValue(p=1),
+    ], p=0.8),
+    A.OneOf([
+        A.ElasticTransform(p=1),
+        A.GridDistortion(p=1),
+        A.OpticalDistortion(p=1),
+    ], p=0.3),
+    A.CoarseDropout(
+        max_holes=8,
+        max_height=32,
+        max_width=32,
+        p=0.3
+    ),
+    A.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+])
+
+# Apply transformation
+def augment_image(image):
+    return transform(image=image)['image']
+            </div>
+
+            <div class="highlight">
+                <h3>💡 Pro Tip</h3>
+                <p>Albumentations is often preferred for its speed and extensive collection of augmentation techniques. It's particularly useful for computer vision competitions and production systems.</p>
+            </div>
+        </div>
+
+        <div id="demo" class="content-section">
+            <h2>Interactive Demo</h2>
+            <p>Experience different augmentation techniques with this interactive demonstration.</p>
+
+            <div class="demo-area">
+                <h3>Image Augmentation Simulator</h3>
+                <div class="image-container" id="demo-image">
+                    🖼️ Sample Image
+                </div>
+                
+                <div class="demo-controls">
+                    <button class="demo-button" onclick="applyAugmentation('rotation')">🔄 Rotation</button>
+                    <button class="demo-button" onclick="applyAugmentation('brightness')">☀️ Brightness</button>
+                    <button class="demo-button" onclick="applyAugmentation('flip')">↔️ Flip</button>
+                    <button class="demo-button" onclick="applyAugmentation('zoom')">🔍 Zoom</button>
+                    <button class="demo-button" onclick="applyAugmentation('reset')">🔄 Reset</button>
+                </div>
+                
+                <div id="augmentation-info" style="margin-top: 20px; font-style: italic; color: #666;">
+                    Click on any augmentation technique to see the effect
+                </div>
+            </div>
+
+            <h3>Augmentation Parameters</h3>
+            <div class="technique-grid">
+                <div class="technique-card">
+                    <div class="technique-title">Parameter Tuning</div>
+                    <p>The strength of augmentations should be carefully tuned. Too strong augmentations can hurt performance by making images unrealistic.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">Validation Strategy</div>
+                    <p>Always apply augmentations only to training data, never to validation or test sets. This ensures proper evaluation.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">Domain Considerations</div>
+                    <p>Choose augmentations that make sense for your domain. For example, vertical flips may not be appropriate for natural images.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="best-practices" class="content-section">
+            <h2>Best Practices & Guidelines</h2>
+            <p>Following these best practices will help you get the most out of image augmentation techniques.</p>
+
+            <h3>🎯 Choosing the Right Augmentations</h3>
+            <div class="highlight">
+                <p><strong>Domain-Specific Considerations:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li><strong>Natural Images:</strong> Horizontal flips, rotations, color adjustments work well</li>
+                    <li><strong>Medical Images:</strong> Be cautious with flips and rotations that might change diagnostic meaning</li>
+                    <li><strong>Text/OCR:</strong> Avoid flips, use perspective transforms and slight rotations</li>
+                    <li><strong>Satellite Images:</strong> Rotations and flips are often appropriate</li>
+                </ul>
+            </div>
+
+            <h3>⚖️ Balancing Augmentation Strength</h3>
+            <div class="technique-grid">
+                <div class="technique-card">
+                    <div class="technique-title">Start Conservative</div>
+                    <p>Begin with mild augmentations and gradually increase intensity. Monitor validation performance to find the sweet spot.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">Multiple Techniques</div>
+                    <p>Combine different augmentation types, but avoid applying too many simultaneously to prevent unrealistic images.</p>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">Probability Control</div>
+                    <p>Use probability parameters to control how often each augmentation is applied (typically 0.3-0.7).</p>
+                </div>
+            </div>
+
+            <h3>📊 Performance Monitoring</h3>
+            <div class="code-block">
+# Example: Monitoring augmentation impact
+def evaluate_augmentation_impact(model, original_data, augmented_data):
+    """
+    Compare model performance with and without augmentation
+    """
+    # Train without augmentation
+    model_baseline = train_model(original_data)
+    baseline_accuracy = evaluate_model(model_baseline, test_data)
+    
+    # Train with augmentation
+    model_augmented = train_model(augmented_data)
+    augmented_accuracy = evaluate_model(model_augmented, test_data)
+    
+    print(f"Baseline Accuracy: {baseline_accuracy:.3f}")
+    print(f"Augmented Accuracy: {augmented_accuracy:.3f}")
+    print(f"Improvement: {augmented_accuracy - baseline_accuracy:.3f}")
+    
+    return augmented_accuracy > baseline_accuracy
+            </div>
+
+            <h3>🚀 Advanced Strategies</h3>
+            <div class="highlight">
+                <h4>Progressive Augmentation</h4>
+                <p>Start training with mild augmentations and gradually increase their intensity during training. This helps the model adapt progressively.</p>
+            </div>
+
+            <div class="highlight">
+                <h4>Test-Time Augmentation (TTA)</h4>
+                <p>Apply augmentations during inference and average predictions from multiple augmented versions of the same image for improved accuracy.</p>
+            </div>
+
+            <h3>⚠️ Common Pitfalls to Avoid</h3>
+            <ul style="margin: 20px 0; padding-left: 20px;">
+                <li><strong>Over-augmentation:</strong> Using too many or too strong augmentations can hurt performance</li>
+                <li><strong>Inappropriate augmentations:</strong> Using augmentations that don't make sense for your domain</li>
+                <li><strong>Augmenting validation data:</strong> Always keep validation and test sets unchanged</li>
+                <li><strong>Ignoring class imbalance:</strong> Augment underrepresented classes more to balance the dataset</li>
+                <li><strong>Not monitoring performance:</strong> Always compare results with and without augmentation</li>
+            </ul>
+
+            <div class="demo-area">
+                <h3>📋 Augmentation Checklist</h3>
+                <div style="text-align: left; max-width: 600px; margin: 0 auto;">
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="checkbox"> Choose domain-appropriate augmentations
+                    </label>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="checkbox"> Start with conservative parameters
+                    </label>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="checkbox"> Monitor validation performance
+                    </label>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="checkbox"> Ensure augmented images look realistic
+                    </label>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="checkbox"> Apply only to training data
+                    </label>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="checkbox"> Consider class imbalance
+                    </label>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="checkbox"> Document your augmentation strategy
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all content sections
+            const sections = document.querySelectorAll('.content-section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        function applyAugmentation(type) {
+            const imageContainer = document.getElementById('demo-image');
+            const infoDiv = document.getElementById('augmentation-info');
+            
+            // Reset transform
+            imageContainer.style.transform = '';
+            imageContainer.style.filter = '';
+            imageContainer.style.background = 'linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0), linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0)';
+            
+            switch(type) {
+                case 'rotation':
+                    imageContainer.style.transform = 'rotate(15deg)';
+                    infoDiv.textContent = 'Applied: 15° rotation - commonly used to make models rotation-invariant';
+                    break;
+                case 'brightness':
+                    imageContainer.style.filter = 'brightness(1.3)';
+                    infoDiv.textContent = 'Applied: Brightness increase - helps models adapt to different lighting conditions';
+                    break;
+                case 'flip':
+                    imageContainer.style.transform = 'scaleX(-1)';
+                    infoDiv.textContent = 'Applied: Horizontal flip - doubles the dataset size for symmetric objects';
+                    break;
+                case 'zoom':
+                    imageContainer.style.transform = 'scale(1.2)';
+                    infoDiv.textContent = 'Applied: 20% zoom - helps models recognize objects at different scales';
+                    break;
+                case 'reset':
+                    infoDiv.textContent = 'Original image restored - no augmentation applied';
+                    break;
+            }
+        }
+
+        // Add some interactivity to technique cards
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.technique-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px) scale(1.02)';
+                });
+                                card.addEventListener('mouseleave', function() {
+                                    this.style.transform = 'translateY(0) scale(1)';
+                                });
+                            });
+                        });
+                    </script>
+                </body>
+                </html>

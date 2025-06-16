@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Mentorship Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #334155; /* Dark slate text */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            flex-grow: 1; /* Allow container to grow and fill space */
+        }
+        .tab-button.active {
+            background-color: #0d9488; /* Teal-800 */
+            color: white;
+            border-bottom: 2px solid #14b8a6; /* Teal-500 */
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        /* Style for interactive elements */
+        .interactive-box {
+            border: 2px dashed #a78bfa; /* Violet-400 */
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            background-color: #ede9fe; /* Violet-100 */
+        }
+        .footer {
+            background-color: #1a202c; /* Darker footer */
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            margin-top: 2rem;
+        }
+        /* IoU Calculator Specific Styles */
+        .iou-canvas-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 75%; /* 4:3 Aspect Ratio (height:width = 3:4) */
+            background-color: #e2e8f0; /* Gray-200 */
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 1rem;
+        }
+        #iouCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+        }
+        /* Fine-tuning specific styles */
+        .model-layer {
+            transition: all 0.3s ease-in-out;
+            border: 2px solid transparent;
+        }
+        .model-layer.frozen {
+            background-color: #94a3b8; /* Slate-400 */
+            border-color: #475569; /* Slate-600 */
+        }
+        .model-layer.trained {
+            background-color: #34d399; /* Emerald-400 */
+            border-color: #059669; /* Emerald-600 */
+        }
+        .model-layer.unfrozen-trained {
+            background-color: #6ee7b7; /* Emerald-300 */
+            border-color: #059669; /* Emerald-600 */
+        }
+
+        /* Bounding Box Drawing Styles */
+        #bboxCanvas {
+            background-image: url('https://placehold.co/600x400/94a3b8/ffffff?text=Example+Scene'); /* Background image for bbox drawing */
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #ccc;
+            cursor: crosshair;
+        }
+        .drawn-bbox {
+            position: absolute;
+            border: 2px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            font-weight: bold;
+        }
+        .bbox-label {
+            position: absolute;
+            top: -20px; /* Adjust as needed */
+            left: 0;
+            background-color: rgba(0,0,0,0.7);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+        }
+
+        /* NMS Visualization */
+        .nms-box {
+            position: absolute;
+            border: 2px solid;
+            background-color: rgba(0, 0, 0, 0.2);
+            transition: opacity 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: white;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+        .nms-box.selected {
+            border-color: #22c55e; /* Green */
+            background-color: rgba(34, 197, 94, 0.4);
+        }
+        .nms-box.suppressed {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .nms-box.original {
+            border-color: #ef4444; /* Red */
+        }
+
+        /* Multiscale Detection */
+        .feature-map-grid {
+            display: grid;
+            border: 1px solid #ccc;
+            background-color: #cbd5e1; /* Slate-300 */
+            border-radius: 0.5rem;
+        }
+        .feature-map-cell {
+            border: 1px solid rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: rgba(0,0,0,0.5);
+            transition: background-color 0.3s ease;
+        }
+        .feature-map-cell.detected {
+            background-color: #34d399; /* Emerald-400 */
+            color: white;
+        }
+        .small-obj-box {
+            width: 10px;
+            height: 10px;
+            background-color: #f97316; /* Orange */
+            border: 1px solid #c2410c;
+        }
+        .large-obj-box {
+            width: 30px;
+            height: 30px;
+            background-color: #1d4ed8; /* Blue */
+            border: 1px solid #1e3a8a;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-gradient-to-r from-teal-600 to-emerald-700 text-white p-4 shadow-lg rounded-b-xl">
+        <div class="container flex justify-between items-center">
+            <h1 class="text-3xl font-extrabold tracking-tight">ML Mentorship Portal</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="#welcome" class="hover:underline text-lg">Welcome</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container py-8">
+        <!-- Welcome Section -->
+        <section id="welcome" class="content-section active bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-4xl font-bold text-teal-700 mb-6">Welcome to Your Machine Learning Mentorship!</h2>
+            <p class="text-lg text-gray-700 leading-relaxed mb-4">
+                This interactive portal is designed to guide you through key concepts in computer vision, focusing on techniques vital for image analysis and object detection. We'll cover everything from preparing your data to understanding advanced detection models.
+            </p>
+            <p class="text-lg text-gray-700 leading-relaxed mb-6">
+                Use the tabs below to navigate through the topics. Each section provides detailed explanations and, where possible, interactive demonstrations to solidify your understanding. Let's dive in!
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-teal-50 p-6 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-semibold text-teal-800 mb-3">Data Augmentation</h3>
+                    <p class="text-gray-600">Learn how to make your models more robust by synthetically expanding your dataset.</p>
+                </div>
+                <div class="bg-emerald-50 p-6 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-semibold text-emerald-800 mb-3">Fine-Tuning</h3>
+                    <p class="text-gray-600">Discover the power of transfer learning by adapting pre-trained models to new tasks.</p>
+                </div>
+                <div class="bg-violet-50 p-6 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-semibold text-violet-800 mb-3">Object Detection Basics</h3>
+                    <p class="text-gray-600">Understand the fundamentals of locating and classifying objects within images.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap border-b border-gray-300 mb-8 rounded-t-lg overflow-hidden shadow-md bg-gray-50">
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100 rounded-tl-lg" data-target="image-augmentation">14.1 Image Augmentation</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100" data-target="fine-tuning">14.2 Fine-Tuning</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100" data-target="object-detection-bb">14.3 Object Detection & Bounding Boxes</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100" data-target="anchor-boxes">14.4 Anchor Boxes</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100" data-target="multiscale-detection">14.5 Multiscale Object Detection</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100" data-target="object-detection-dataset">14.6 The Object Detection Dataset</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100 rounded-tr-lg" data-target="ssd">14.7 Single Shot Multibox Detection</button>
+        </div>
+
+        <!-- Content Sections -->
+        <section id="image-augmentation" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.1 Image Augmentation</h2>
+            <p class="text-gray-700 mb-4">
+                Image augmentation is a technique used to artificially expand the training dataset by creating modified versions of existing images. This helps in regularizing the model, reducing overfitting, and improving its generalization capabilities to unseen data.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.1.1. Common Image Augmentation Methods</h3>
+            <p class="text-gray-700 mb-2">Common methods include:</p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">Flipping:</strong> Horizontally or vertically flipping images.</li>
+                <li><strong class="font-medium">Rotation:</strong> Rotating images by a certain degree.</li>
+                <li><strong class="font-medium">Cropping:</strong> Randomly cropping parts of the image.</li>
+                <li><strong class="font-medium">Shearing:</strong> Shifting one part of the image, distorting its shape.</li>
+                <li><strong class="font-medium">Color Jittering:</strong> Randomly changing brightness, contrast, saturation, or hue.</li>
+                <li><strong class="font-medium">Adding Noise:</strong> Introducing random noise to the image.</li>
+            </ul>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Image Augmentation Visualizer</h4>
+                <p class="text-gray-700 mb-4">Upload your own image and select an augmentation method to see its effect.</p>
+                <input type="file" id="imageUpload" accept="image/*" class="mb-4 p-2 border rounded-md">
+                <div class="flex flex-col items-center">
+                    <img id="original-image" src="https://placehold.co/300x300/a78bfa/ffffff?text=Original+Image" alt="Original Image" class="w-64 h-64 object-cover rounded-lg shadow-md mb-4">
+                    <img id="augmented-image" src="" alt="Augmented Image" class="w-64 h-64 object-cover rounded-lg shadow-md mb-4 hidden">
+                    <div class="flex space-x-4 mb-4">
+                        <button class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition duration-200" onclick="augmentImage('flip')" id="flipBtn" disabled>Flip</button>
+                        <button class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition duration-200" onclick="augmentImage('rotate')" id="rotateBtn" disabled>Rotate</button>
+                        <button class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition duration-200" onclick="augmentImage('crop')" id="cropBtn" disabled>Crop</button>
+                        <button class="px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed">Color Jitter (Soon)</button>
+                        <button class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-200" onclick="resetImage()" id="resetBtn" disabled>Reset</button>
+                    </div>
+                     <p id="augmentation-effect" class="text-gray-600 text-center italic"></p>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.1.2. Training with Image Augmentation</h3>
+            <p class="text-gray-700 mb-4">
+                During training, image augmentation is applied on-the-fly to the input images before they are fed into the neural network. This means each epoch, the model sees slightly different versions of the same image, preventing it from memorizing the training data and improving its ability to generalize to new, unseen data. It's a powerful regularization technique.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.1.3. Summary</h3>
+            <p class="text-gray-700">
+                Image augmentation is crucial for building robust deep learning models, especially when dataset size is limited. It helps improve model generalization and reduces overfitting by exposing the model to a wider variety of relevant data variations.
+            </p>
+        </section>
+
+        <section id="fine-tuning" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.2 Fine-Tuning</h2>
+            <p class="text-gray-700 mb-4">
+                Fine-tuning is a transfer learning technique where a pre-trained model (trained on a very large dataset, e.g., ImageNet) is adapted for a new, often smaller, related task. Instead of training a deep network from scratch, which requires massive amounts of data and computational resources, you leverage the features learned by the pre-trained model.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.2.1. Steps</h3>
+            <ol class="list-decimal list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">Load Pre-trained Model:</strong> Start with a model (e.g., ResNet, VGG, Inception) trained on a large dataset.</li>
+                <li><strong class="font-medium">Replace Output Layer:</strong> The original model's output layer is designed for its original task (e.g., 1000 classes for ImageNet). Replace this with a new layer (or layers) suitable for your specific task (e.g., 2 classes for hot dog vs. not hot dog).</li>
+                <li><strong class="font-medium">Freeze Early Layers:</strong> Freeze the weights of the initial layers of the pre-trained model. These layers typically learn general features (edges, textures) that are useful across many image tasks. Only train the newly added layers.</li>
+                <li><strong class="font-medium">Train the New Layers:</strong> Train the model for a few epochs with a small learning rate. This helps the new layers learn to interpret the high-level features from the frozen layers.</li>
+                <li><strong class="font-medium">Unfreeze Some Layers (Optional):</strong> For even better performance, you can unfreeze some of the later convolutional layers (closer to the output) and continue training with a very small learning rate. This allows the model to slightly adapt its learned features to your specific dataset.</li>
+            </ol>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.2.2. Hot Dog Recognition</h3>
+            <p class="text-gray-700 mb-4">
+                A classic example is fine-tuning a model trained on ImageNet (which contains diverse categories) to recognize "hot dogs" vs. "not hot dogs". You would take a pre-trained model, replace its final classification layer with a new one that has two output neurons (for "hot dog" and "not hot dog"), and then fine-tune it on a dataset of hot dog images. The early layers would already understand what "food" or "round shapes" look like, making the new task much easier to learn.
+            </p>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Fine-Tuning Conceptual Diagram</h4>
+                <p class="text-gray-700 mb-4">Click "Start Fine-Tuning" to see the conceptual process.</p>
+                <div class="flex flex-col items-center justify-center space-y-4">
+                    <div class="flex items-center space-x-8">
+                        <div class="flex flex-col items-center">
+                            <div class="w-24 h-24 bg-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">Input Image</div>
+                        </div>
+                        <div class="text-4xl">→</div>
+                        <div id="featureExtractor" class="model-layer w-32 h-32 bg-gray-300 rounded-lg flex items-center justify-center text-gray-700 font-bold text-sm shadow-md">
+                            <p class="text-center">Pre-trained <br>Feature Extractor</p>
+                        </div>
+                        <div class="text-4xl">→</div>
+                        <div id="newClassifier" class="model-layer w-24 h-24 bg-green-400 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">
+                            <p class="text-center">New Classifier</p>
+                        </div>
+                        <div class="text-4xl">→</div>
+                        <div class="w-24 h-24 bg-red-400 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">Output Classes<br>(e.g., Hot Dog / Not Hot Dog)</div>
+                    </div>
+                    <button id="fineTuneBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-200 mt-4">Start Fine-Tuning</button>
+                    <p id="fineTuneStatus" class="text-gray-600 text-center italic"></p>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.2.3. Summary</h3>
+            <p class="text-gray-700">
+                Fine-tuning is a powerful and efficient way to achieve high performance on new image tasks, especially when data is limited, by leveraging the vast knowledge embedded in pre-trained deep learning models.
+            </p>
+        </section>
+
+        <section id="object-detection-bb" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.3 Object Detection and Bounding Boxes</h2>
+            <p class="text-gray-700 mb-4">
+                Object detection is a computer vision task that involves identifying and locating objects within an image or video. Unlike image classification, which simply tells you what the main object in an image is, object detection tells you *what* objects are present and *where* they are.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.3.1. Bounding Boxes</h3>
+            <p class="text-gray-700 mb-4">
+                The location of an object is typically indicated by a <strong class="font-medium">bounding box</strong>, which is an axis-aligned rectangle tightly enclosing the object.
+                Bounding boxes are usually represented by one of two common formats:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">$(x, y, width, height)$:</strong> The coordinates $(x, y)$ of the top-left corner of the box, followed by its width and height.</li>
+                <li><strong class="font-medium">$(x_{min}, y_{min}, x_{max}, y_{max})$:</strong> The coordinates of the top-left corner $(x_{min}, y_{min})$ and the bottom-right corner $(x_{max}, y_{max})$ of the box.</li>
+            </ul>
+            <p class="text-gray-700 mb-4">
+                During training, the model learns to predict these coordinates along with the class label for each detected object.
+            </p>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Bounding Box Drawing (Conceptual)</h4>
+                <p class="text-gray-700 mb-4">Click and drag on the image to draw a conceptual bounding box. Choose a label!</p>
+                <select id="bboxLabelSelect" class="mb-2 p-2 border rounded-md">
+                    <option value="Car">Car</option>
+                    <option value="Person">Person</option>
+                    <option value="Tree">Tree</option>
+                    <option value="Dog">Dog</option>
+                </select>
+                <button id="clearBboxesBtn" class="ml-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-200">Clear Boxes</button>
+
+                <div id="bboxContainer" class="relative w-full max-w-lg mx-auto mt-4 rounded-lg shadow-md overflow-hidden" style="padding-bottom: 66.66%;">
+                     <!-- Fixed aspect ratio container for the image -->
+                    <img id="bboxImage" src="https://placehold.co/600x400/94a3b8/ffffff?text=Example+Scene" alt="Example Scene" class="absolute inset-0 w-full h-full object-cover">
+                    <canvas id="bboxCanvas" class="absolute inset-0 w-full h-full"></canvas>
+                </div>
+                <p id="bboxStatus" class="text-gray-600 text-center italic mt-2"></p>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.3.2. Summary</h3>
+            <p class="text-gray-700">
+                Object detection aims to both classify and localize objects in an image, using bounding boxes to specify their exact positions.
+            </p>
+        </section>
+
+        <section id="anchor-boxes" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.4 Anchor Boxes</h2>
+            <p class="text-gray-700 mb-4">
+                Anchor boxes (or prior boxes) are a set of predefined bounding box proposals of a fixed size and aspect ratio, placed at every location (or specific locations) in an image. Object detection models use these anchor boxes as a starting point to predict the actual bounding boxes of objects.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.4.1. Generating Multiple Anchor Boxes</h3>
+            <p class="text-gray-700 mb-4">
+                For each spatial location on a feature map (which corresponds to a region in the original image), multiple anchor boxes are generated, typically with different scales and aspect ratios. For example, you might use anchor boxes with aspect ratios like 1:1, 1:2, 2:1 and scales like small, medium, large. This allows the model to predict objects of various shapes and sizes.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.4.2. Intersection over Union (IoU)</h3>
+            <p class="text-gray-700 mb-4">
+                Intersection over Union (IoU) is a crucial metric in object detection used to measure the overlap between two bounding boxes. It is calculated as the area of intersection divided by the area of union of the two boxes:
+                $$ \text{IoU} = \frac{\text{Area of Intersection}}{\text{Area of Union}} $$
+                A higher IoU value indicates a better overlap. In object detection, a predicted bounding box is usually considered a true positive if its IoU with a ground-truth bounding box exceeds a certain threshold (e.g., 0.5 or 0.7).
+            </p>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: IoU Calculator</h4>
+                <p class="text-gray-700 mb-2">Drag and resize the red and blue boxes to calculate their Intersection over Union (IoU).</p>
+                <div class="iou-canvas-container">
+                    <canvas id="iouCanvas"></canvas>
+                </div>
+                <p class="text-center mt-2 text-lg font-bold text-gray-800">IoU: <span id="iouValue" class="text-teal-600">0.00</span></p>
+            </div>
+
+            <div class="interactive-box bg-purple-50 mt-6">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Anchor Box & NMS Visualization (Conceptual)</h4>
+                <p class="text-gray-700 mb-4">Generate conceptual anchor boxes and then apply Non-Maximum Suppression (NMS) to see how overlapping predictions are refined.</p>
+                <button id="generateAnchorsBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-200 mr-2">Generate Anchor Boxes</button>
+                <button id="applyNMSBtn" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition duration-200" disabled>Apply NMS</button>
+                <div id="nmsContainer" class="relative w-full max-w-lg mx-auto mt-4 rounded-lg shadow-md overflow-hidden border border-gray-300" style="height: 300px; background-image: url('https://placehold.co/600x400/94a3b8/ffffff?text=Anchor+Box+Base'); background-size: cover; background-position: center;">
+                    <!-- NMS boxes will be dynamically added here -->
+                </div>
+                <p id="nmsStatus" class="text-gray-600 text-center italic mt-2"></p>
+            </div>
+
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.4.3. Labeling Anchor Boxes in Training Data</h3>
+            <p class="text-gray-700 mb-4">
+                During training, each ground-truth bounding box (the actual object location) is matched with the anchor box that has the highest IoU with it (and is above a certain threshold). This anchor box is then responsible for predicting that object. Anchor boxes with high IoU to ground-truth boxes are assigned a positive label (object present), while those with low IoU are assigned a negative label (background).
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.4.4. Predicting Bounding Boxes with Non-Maximum Suppression (NMS)</h3>
+            <p class="text-gray-700 mb-4">
+                Object detection models often predict many overlapping bounding boxes for the same object. <strong class="font-medium">Non-Maximum Suppression (NMS)</strong> is an algorithm used to filter these redundant predictions, keeping only the most confident and representative bounding box for each object.
+                The process typically involves:
+            </p>
+            <ol class="list-decimal list-inside text-gray-700 ml-4 mb-4">
+                <li>Sort all predicted bounding boxes by their confidence scores (how likely the box contains an object).</li>
+                <li>Select the box with the highest confidence score and add it to the final list of detections.</li>
+                <li>Remove all other boxes that have a high IoU with the selected box (i.e., they largely overlap).</li>
+                <li>Repeat until no more boxes are left.</li>
+            </ol>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.4.5. Summary</h3>
+            <p class="text-gray-700">
+                Anchor boxes provide a systematic way to predict objects of various sizes and aspect ratios, while IoU is key for evaluating overlap and NMS helps in refining the final set of object detections.
+            </p>
+        </section>
+
+        <section id="multiscale-detection" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.5 Multiscale Object Detection</h2>
+            <p class="text-gray-700 mb-4">
+                Objects in images can vary significantly in size. Detecting very small objects and very large objects effectively within the same image is a challenge for single-scale detection methods. Multiscale object detection addresses this by utilizing feature maps from different layers of a convolutional neural network.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.5.1. Multiscale Anchor Boxes</h3>
+            <p class="text-gray-700 mb-4">
+                In a deep CNN, early layers capture fine-grained details and have a higher spatial resolution, making them suitable for detecting small objects. Later layers, after more convolutions and pooling, have a coarser spatial resolution but capture higher-level, semantic features, making them better for detecting large objects.
+                Multiscale anchor boxes are applied to these different feature maps:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">High-resolution feature maps (early layers):</strong> Used with smaller anchor boxes to detect small objects.</li>
+                <li><strong class="font-medium">Low-resolution feature maps (later layers):</strong> Used with larger anchor boxes to detect large objects.</li>
+            </ul>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.5.2. Multiscale Detection</h3>
+            <p class="text-gray-700 mb-4">
+                The network makes predictions (class probabilities and bounding box offsets) independently at multiple scales, using the corresponding feature maps. These predictions are then combined, and NMS is applied globally to produce the final set of detections. This approach allows the model to be robust to varying object sizes.
+            </p>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Multiscale Detection Concept</h4>
+                <p class="text-gray-700 mb-4">Click on the feature maps to see how different object sizes are conceptually detected.</p>
+                <div class="flex flex-col items-center">
+                    <img src="https://placehold.co/400x250/9ca3af/ffffff?text=Input+Image+with+Objects" alt="Multiscale Input" class="w-full max-w-md rounded-lg shadow-md mb-4">
+                    <div class="flex flex-col md:flex-row gap-4 w-full max-w-lg mt-4 items-center">
+                        <div id="fineScaleMap" class="flex flex-col items-center border border-gray-300 p-2 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 transition duration-200 flex-1">
+                            <div class="feature-map-grid w-24 h-24" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr);">
+                                <!-- Cells will be generated by JS -->
+                            </div>
+                            <p class="text-sm font-semibold text-gray-800 mt-2">Fine Scale Map (Small Objects)</p>
+                            <p class="text-xs text-gray-600 mt-1" id="fineScaleStatus">Click to detect small objects.</p>
+                        </div>
+                        <div class="text-4xl hidden md:block">→</div>
+                        <div id="coarseScaleMap" class="flex flex-col items-center border border-gray-300 p-2 rounded-md bg-gray-100 cursor-pointer hover:bg-gray-200 transition duration-200 flex-1">
+                            <div class="feature-map-grid w-24 h-24" style="grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr);">
+                                <!-- Cells will be generated by JS -->
+                            </div>
+                            <p class="text-sm font-semibold text-gray-800 mt-2">Coarse Scale Map (Large Objects)</p>
+                            <p class="text-xs text-gray-600 mt-1" id="coarseScaleStatus">Click to detect large objects.</p>
+                        </div>
+                    </div>
+                     <p class="text-gray-600 text-center italic mt-4">Different feature maps detect objects of different sizes effectively.</p>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.5.3. Summary</h3>
+            <p class="text-gray-700">
+                Multiscale object detection is essential for detecting objects across a wide range of sizes by leveraging feature maps at different resolutions within the network architecture.
+            </p>
+        </section>
+
+        <section id="object-detection-dataset" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.6 The Object Detection Dataset</h2>
+            <p class="text-gray-700 mb-4">
+                Training robust object detection models requires large, meticulously annotated datasets. These datasets consist of images, where each object of interest is labeled with its class (e.g., "person", "car") and the coordinates of its bounding box.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.6.1. Downloading the Dataset</h3>
+            <p class="text-gray-700 mb-4">
+                Popular object detection datasets include:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">COCO (Common Objects in Context):</strong> A very large-scale object detection, segmentation, and captioning dataset with over 200,000 labeled images and 80 object categories.</li>
+                <li><strong class="font-medium">Pascal VOC (Visual Object Classes):</strong> A smaller but widely used dataset for object detection and classification, typically with 20 object categories.</li>
+                <li><strong class="font-medium">Open Images Dataset:</strong> A dataset with millions of images and hundreds of object classes, often with more complex scenes.</li>
+            </ul>
+            <p class="text-gray-700">
+                These datasets are typically downloaded as large archives containing image files and separate annotation files (often in XML or JSON format).
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.6.2. Reading the Dataset</h3>
+            <p class="text-gray-700 mb-4">
+                Reading these datasets involves parsing the annotation files to extract the image paths, bounding box coordinates, and corresponding class labels for each object in every image. This data is then loaded into memory or a suitable data structure for batching and feeding into the neural network during training.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.6.3. Demonstration (Conceptual)</h3>
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Dataset Structure Conceptualization</h4>
+                <p class="text-gray-700 mb-4">Explore a conceptual image and its annotation data.</p>
+                <div class="flex flex-col items-center">
+                    <div class="flex items-center space-x-8">
+                        <div class="flex flex-col items-center">
+                            <img id="datasetDemoImage" src="https://placehold.co/200x150/60a5fa/ffffff?text=Image+001" alt="Dataset Demo Image" class="rounded-lg shadow-md mb-2">
+                            <button id="viewAnnotationBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200">View Annotation</button>
+                        </div>
+                        <div class="text-4xl">+</div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-32 h-32 bg-green-200 rounded-lg flex items-center justify-center text-green-800 font-bold text-sm shadow-md">
+                                <p class="text-center">Annotations File<br>(e.g., XML/JSON)</p>
+                            </div>
+                            <div id="annotationDisplay" class="bg-gray-100 p-2 rounded-md text-xs mt-2 text-left max-w-xs overflow-auto h-32 hidden">
+                                <!-- Annotation JSON will be injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.6.4. Summary</h3>
+            <p class="text-gray-700">
+                High-quality, annotated datasets are the backbone of effective object detection models, providing the ground truth for the model to learn from.
+            </p>
+        </section>
+
+        <section id="ssd" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.7 Single Shot Multibox Detection (SSD)</h2>
+            <p class="text-gray-700 mb-4">
+                Single Shot Multibox Detector (SSD) is a popular object detection algorithm known for its balance of speed and accuracy. Unlike two-stage detectors (like Faster R-CNN) that first propose regions and then classify them, SSD performs both localization and classification in a single forward pass, making it faster.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.7.1. Model</h3>
+            <p class="text-gray-700 mb-4">
+                SSD builds upon a standard feed-forward convolutional network (e.g., VGG-16, ResNet) as its base network. It then adds several convolutional layers to the end of the base network to produce feature maps of decreasing sizes (multiscale).
+                <br><br>
+                For each of these feature maps, SSD applies small convolutional filters to predict:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">Offsets for default (anchor) boxes:</strong> Adjustments to the predefined anchor boxes to better fit the actual object.</li>
+                <li><strong class="font-medium">Class probabilities:</strong> Scores for each object category for each anchor box.</li>
+            </ul>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.7.2. Training</h3>
+            <p class="text-gray-700 mb-4">
+                SSD's training objective function (loss) is a combination of two parts:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">Localization Loss:</strong> Measures how well the predicted bounding boxes align with the ground-truth boxes (e.g., Smooth L1 loss).</li>
+                <li><strong class="font-medium">Confidence Loss:</strong> Measures how well the model classifies the objects within the bounding boxes (e.g., softmax loss for multiple classes, or binary cross-entropy for foreground/background).</li>
+            </ul>
+            <p class="text-gray-700">
+                During training, techniques like hard negative mining (focusing on difficult background examples) are used to balance the number of positive and negative samples, as most anchor boxes are background.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.7.3. Prediction</h3>
+            <p class="text-gray-700 mb-4">
+                During inference, SSD generates a large number of predictions across all feature maps. After applying the predicted offsets to the anchor boxes, Non-Maximum Suppression (NMS) is used to filter out highly overlapping boxes and obtain the final, distinct object detections.
+            </p>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: SSD Simplified Flow (Step-by-Step)</h4>
+                <p class="text-gray-700 mb-4">Click the buttons to highlight the steps in SSD's prediction flow.</p>
+                <div class="flex flex-wrap justify-center gap-2 mb-4">
+                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-200" onclick="highlightSSDStep('reset')">Reset</button>
+                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-200" onclick="highlightSSDStep('input')">Input Image</button>
+                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-200" onclick="highlightSSDStep('backbone')">Base Network</button>
+                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-200" onclick="highlightSSDStep('feature_maps')">Feature Maps</button>
+                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-200" onclick="highlightSSDStep('predict')">Predict Boxes & Scores</button>
+                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-200" onclick="highlightSSDStep('nms')">NMS</button>
+                    <button class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-200" onclick="highlightSSDStep('final')">Final Detections</button>
+                </div>
+                <div class="flex flex-col items-center justify-center space-y-4">
+                    <div id="ssdInput" class="ssd-step w-32 h-20 bg-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">Input Image</div>
+                    <div class="text-4xl">↓</div>
+                    <div id="ssdBackbone" class="ssd-step w-48 h-20 bg-gray-300 rounded-lg flex items-center justify-center text-gray-700 font-bold text-sm shadow-md text-center">Base Network (e.g., VGG)<br>Feature Extraction</div>
+                    <div class="text-4xl">↓</div>
+                    <div class="flex items-center space-x-4">
+                        <div id="ssdFineMap" class="ssd-step w-24 h-16 bg-yellow-300 rounded-lg flex items-center justify-center text-yellow-800 font-bold text-xs shadow-md">Fine Scale Feature Map</div>
+                        <div class="text-4xl">→</div>
+                        <div id="ssdCoarseMap" class="ssd-step w-24 h-16 bg-red-300 rounded-lg flex items-center justify-center text-red-800 font-bold text-xs shadow-md">Coarse Scale Feature Map</div>
+                    </div>
+                    <div class="text-4xl">↓ (Parallel Predictions)</div>
+                    <div id="ssdPredict" class="ssd-step w-64 h-24 bg-green-400 rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md text-center">
+                        <p>Predict Bounding Boxes & Class Scores</p>
+                        <p class="text-xs">(for many anchor boxes at each scale)</p>
+                    </div>
+                    <div class="text-4xl">↓</div>
+                    <div id="ssdNMS" class="ssd-step w-32 h-20 bg-purple-400 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">NMS (Non-Maximum Suppression)</div>
+                    <div class="text-4xl">↓</div>
+                    <div id="ssdFinal" class="ssd-step w-32 h-20 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">Final Detections</div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.7.4. Summary</h3>
+            <p class="text-gray-700">
+                SSD is an efficient one-stage object detector that combines features from multiple scales to predict bounding boxes and class probabilities directly, making it suitable for real-time applications.
+            </p>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 ML Mentorship Portal. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // JavaScript for tab functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const contentSections = document.querySelectorAll('.content-section');
+            const welcomeSection = document.getElementById('welcome');
+
+            // Function to show a specific section
+            const showSection = (targetId) => {
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                tabButtons.forEach(button => {
+                    button.classList.remove('active');
+                });
+
+                document.getElementById(targetId).classList.add('active');
+                if (targetId !== 'welcome') {
+                     document.querySelector(`.tab-button[data-target="${targetId}"]`).classList.add('active');
+                }
+            };
+
+            // Set initial active tab (e.g., welcome or first content tab)
+            // If the URL hash exists, try to activate that section
+            if (window.location.hash) {
+                const targetFromHash = window.location.hash.substring(1);
+                const sectionExists = Array.from(contentSections).some(section => section.id === targetFromHash);
+                if (sectionExists) {
+                    showSection(targetFromHash);
+                } else {
+                    showSection('welcome'); // Fallback to welcome if hash is invalid
+                }
+            } else {
+                showSection('welcome'); // Default to welcome section
+            }
+
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+                    showSection(targetId);
+                    window.location.hash = targetId; // Update URL hash
+                });
+            });
+
+            // Handle welcome section navigation (if added to general nav)
+            const welcomeLink = document.querySelector('nav ul li a[href="#welcome"]');
+            if (welcomeLink) {
+                welcomeLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showSection('welcome');
+                    window.location.hash = 'welcome';
+                });
+            }
+
+            // Interactive: Image Augmentation
+            const originalImage = document.getElementById('original-image');
+            const augmentedImage = document.getElementById('augmented-image');
+            const augmentationEffectText = document.getElementById('augmentation-effect');
+            const imageUpload = document.getElementById('imageUpload');
+            const flipBtn = document.getElementById('flipBtn');
+            const rotateBtn = document.getElementById('rotateBtn');
+            const cropBtn = document.getElementById('cropBtn');
+            const resetBtn = document.getElementById('resetBtn');
+
+            let currentRotation = 0;
+            let isFlippedX = false; // New state variable for horizontal flip
+            const basePlaceholderImageSrc = "https://placehold.co/300x300/a78bfa/ffffff?text=Original+Image"; // Default placeholder
+            let currentBaseImageSrc = basePlaceholderImageSrc; // The current original image source (placeholder or uploaded)
+
+            // Function to update the transform property based on current state
+            const applyTransforms = () => {
+                let transformString = '';
+                if (isFlippedX) {
+                    transformString += 'scaleX(-1) ';
+                }
+                if (currentRotation !== 0) {
+                    transformString += `rotate(${currentRotation}deg)`;
+                }
+                augmentedImage.style.transform = transformString.trim(); // Apply combined transforms
+            };
+
+            // Function to enable/disable augmentation buttons
+            const toggleAugmentationButtons = (enable) => {
+                flipBtn.disabled = !enable;
+                rotateBtn.disabled = !enable;
+                cropBtn.disabled = !enable;
+                resetBtn.disabled = !enable;
+                // Add/remove cursor-not-allowed for visual feedback
+                [flipBtn, rotateBtn, cropBtn, resetBtn].forEach(btn => {
+                    if (enable) {
+                        btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                        btn.classList.add('bg-teal-500', 'hover:bg-teal-600');
+                        if (btn.id === 'resetBtn') {
+                            btn.classList.remove('bg-teal-500', 'hover:bg-teal-600');
+                            btn.classList.add('bg-red-500', 'hover:bg-red-600');
+                        }
+                    } else {
+                        btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                        btn.classList.remove('bg-teal-500', 'hover:bg-teal-600', 'bg-red-500', 'hover:bg-red-600');
+                    }
+                });
+            };
+
+            // Initially disable buttons, and ensure original image is set to placeholder
+            originalImage.src = basePlaceholderImageSrc;
+            toggleAugmentationButtons(false);
+
+
+            window.augmentImage = (method) => {
+                // Ensure an image is loaded before augmenting.
+                if (imageUpload.files.length === 0 && currentBaseImageSrc === basePlaceholderImageSrc) {
+                     augmentationEffectText.textContent = 'Please upload an image first to apply augmentations, or use the default image.';
+                     return;
+                }
+
+                // Make sure augmented image is visible and original is hidden
+                originalImage.classList.add('hidden');
+                augmentedImage.classList.remove('hidden');
+                augmentedImage.src = currentBaseImageSrc; // Ensure the augmented image displays the base image
+
+                let effect = '';
+                switch (method) {
+                    case 'flip':
+                        isFlippedX = !isFlippedX;
+                        effect = isFlippedX ? 'Image flipped horizontally.' : 'Image un-flipped.';
+                        applyTransforms();
+                        break;
+                    case 'rotate':
+                        currentRotation = (currentRotation + 90) % 360;
+                        effect = `Image rotated by ${currentRotation} degrees.`;
+                        applyTransforms();
+                        break;
+                    case 'crop':
+                        // Crop remains conceptual without advanced canvas manipulation or a library.
+                        effect = 'Image conceptually cropped. In a real scenario, this would apply a random crop to the pixel data.';
+                        // No actual visual change for crop other than text explanation
+                        break;
+                    default:
+                        break;
+                }
+                augmentationEffectText.textContent = effect;
+            };
+
+            window.resetImage = () => {
+                // Reset states
+                currentRotation = 0;
+                isFlippedX = false;
+
+                // Reset images
+                originalImage.classList.remove('hidden');
+                augmentedImage.classList.add('hidden');
+                augmentedImage.style.transform = ''; // Clear transforms on augmented image
+                augmentedImage.src = currentBaseImageSrc; // Ensure it's reset to the source
+
+                augmentationEffectText.textContent = 'Image reset to original state.';
+            };
+
+            imageUpload.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        currentBaseImageSrc = e.target.result; // Store the uploaded image as the current base
+                        originalImage.src = currentBaseImageSrc; // Update original image display
+                        augmentedImage.src = currentBaseImageSrc; // Update augmented image display
+                        originalImage.classList.add('hidden'); // Hide original, show augmented for manipulation
+                        augmentedImage.classList.remove('hidden');
+                        augmentationEffectText.textContent = 'Image uploaded successfully! Now try augmentations.';
+                        currentRotation = 0; // Reset rotation for new image
+                        isFlippedX = false; // Reset flip state for new image
+                        applyTransforms(); // Apply any initial (zero) transforms
+                        toggleAugmentationButtons(true); // Enable buttons
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    // If no file selected, revert to placeholder
+                    currentBaseImageSrc = basePlaceholderImageSrc;
+                    originalImage.src = basePlaceholderImageSrc;
+                    augmentedImage.src = ''; // Clear augmented image src
+                    originalImage.classList.remove('hidden'); // Show original placeholder
+                    augmentedImage.classList.add('hidden'); // Hide augmented
+                    augmentationEffectText.textContent = 'No image uploaded, showing default placeholder.';
+                    toggleAugmentationButtons(false); // Disable buttons
+                    currentRotation = 0;
+                    isFlippedX = false;
+                    applyTransforms(); // Reset transforms visually
+                }
+            });
+
+            // Interactive: Fine-Tuning Conceptual Diagram (14.2)
+            const fineTuneBtn = document.getElementById('fineTuneBtn');
+            const featureExtractor = document.getElementById('featureExtractor');
+            const newClassifier = document.getElementById('newClassifier');
+            const fineTuneStatus = document.getElementById('fineTuneStatus');
+
+            fineTuneBtn.addEventListener('click', () => {
+                featureExtractor.classList.add('frozen');
+                featureExtractor.querySelector('p').textContent = 'Pre-trained Feature Extractor (Frozen)';
+
+                newClassifier.classList.add('trained');
+                newClassifier.querySelector('p').textContent = 'New Classifier (Trained)';
+
+                fineTuneStatus.textContent = 'Fine-tuning in progress: Feature Extractor frozen, New Classifier being trained.';
+
+                // Simulate unfreezing later layers after a delay
+                setTimeout(() => {
+                    featureExtractor.classList.remove('frozen');
+                    featureExtractor.classList.add('unfrozen-trained');
+                    featureExtractor.querySelector('p').textContent = 'Feature Extractor (Slightly Adapted)';
+                    fineTuneStatus.textContent = 'Fine-tuning complete! Model adapted for new task.';
+                }, 2000);
+            });
+
+            // Interactive: Bounding Box Drawing (Conceptual) (14.3)
+            const bboxCanvas = document.getElementById('bboxCanvas');
+            const bboxContainer = document.getElementById('bboxContainer');
+            const bboxLabelSelect = document.getElementById('bboxLabelSelect');
+            const clearBboxesBtn = document.getElementById('clearBboxesBtn');
+            const bboxStatus = document.getElementById('bboxStatus');
+            const bboxCtx = bboxCanvas.getContext('2d');
+
+            let isDrawing = false;
+            let startX, startY;
+
+            // Function to clear all drawn boxes
+            const clearDrawnBboxes = () => {
+                // Clear any drawn boxes on the canvas (if used for drawing)
+                bboxCtx.clearRect(0, 0, bboxCanvas.width, bboxCanvas.height);
+                // Remove all dynamically created div boxes
+                Array.from(bboxContainer.querySelectorAll('.drawn-bbox')).forEach(box => box.remove());
+                bboxStatus.textContent = 'Ready to draw new bounding boxes.';
+            };
+
+            clearBboxesBtn.addEventListener('click', clearDrawnBboxes);
+
+            bboxCanvas.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                const rect = bboxCanvas.getBoundingClientRect();
+                startX = e.clientX - rect.left;
+                startY = e.clientY - rect.top;
+                bboxStatus.textContent = 'Drawing...';
+            });
+
+            bboxCanvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                const rect = bboxCanvas.getBoundingClientRect();
+                const currentX = e.clientX - rect.left;
+                const currentY = e.clientY - rect.top;
+
+                // Clear previous rectangle to draw new one
+                bboxCtx.clearRect(0, 0, bboxCanvas.width, bboxCanvas.height);
+                bboxCtx.strokeStyle = 'red';
+                bboxCtx.lineWidth = 2;
+                bboxCtx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+            });
+
+            bboxCanvas.addEventListener('mouseup', (e) => {
+                if (!isDrawing) return;
+                isDrawing = false;
+
+                const rect = bboxCanvas.getBoundingClientRect();
+                const endX = e.clientX - rect.left;
+                const endY = e.clientY - rect.top;
+
+                const x = Math.min(startX, endX);
+                const y = Math.min(startY, endY);
+                const width = Math.abs(startX - endX);
+                const height = Math.abs(startY - endY);
+
+                if (width > 5 && height > 5) { // Only add if it's a reasonably sized box
+                    const label = bboxLabelSelect.value;
+                    const color = label === 'Car' ? 'red' : label === 'Person' ? 'blue' : label === 'Tree' ? 'green' : 'purple';
+
+                    const bboxDiv = document.createElement('div');
+                    bboxDiv.classList.add('drawn-bbox');
+                    bboxDiv.style.left = `${(x / rect.width) * 100}%`;
+                    bboxDiv.style.top = `${(y / rect.height) * 100}%`;
+                    bboxDiv.style.width = `${(width / rect.width) * 100}%`;
+                    bboxDiv.style.height = `${(height / rect.height) * 100}%`;
+                    bboxDiv.style.borderColor = color;
+                    bboxDiv.style.color = color;
+                    bboxDiv.style.backgroundColor = `${color.replace(')', ', 0.2)')}`; // Semi-transparent background
+
+                    const labelSpan = document.createElement('span');
+                    labelSpan.classList.add('bbox-label');
+                    labelSpan.style.backgroundColor = color;
+                    labelSpan.textContent = label;
+                    bboxDiv.appendChild(labelSpan);
+
+                    bboxContainer.appendChild(bboxDiv);
+                    bboxStatus.textContent = `Box added for: ${label}`;
+                } else {
+                    bboxStatus.textContent = 'Box too small, try again.';
+                }
+                bboxCtx.clearRect(0, 0, bboxCanvas.width, bboxCanvas.height); // Clear the temporary drawing
+            });
+
+            // Make sure canvas size matches image container size for correct relative positioning
+            const resizeBboxCanvas = () => {
+                const img = document.getElementById('bboxImage');
+                bboxCanvas.width = img.clientWidth;
+                bboxCanvas.height = img.clientHeight;
+                clearDrawnBboxes(); // Clear boxes on resize, for simplicity
+            };
+            window.addEventListener('resize', resizeBboxCanvas);
+            // Wait for image to load before resizing canvas if it's the primary element
+            document.getElementById('bboxImage').onload = resizeBboxCanvas;
+            resizeBboxCanvas(); // Initial call
+
+
+            // Interactive: IoU Calculator (already exists and works)
+            const iouCanvas = document.getElementById('iouCanvas');
+            const ctx = iouCanvas.getContext('2d');
+            const iouValueSpan = document.getElementById('iouValue');
+
+            let rect1 = { x: 50, y: 50, width: 100, height: 100 };
+            let rect2 = { x: 100, y: 100, width: 100, height: 100 };
+            let iouDragging = null; // null, 1, or 2 (for rect1 or rect2)
+            let iouResizeHandle = null; // 'bottomRight' or null
+
+            function drawRect(rect, color, isDragging) {
+                ctx.fillStyle = color;
+                ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+
+                if (isDragging) {
+                     // Draw resize handle
+                    ctx.fillStyle = 'white';
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1;
+                    const handleSize = 8;
+                    ctx.fillRect(rect.x + rect.width - handleSize / 2, rect.y + rect.height - handleSize / 2, handleSize, handleSize);
+                    ctx.strokeRect(rect.x + rect.width - handleSize / 2, rect.y + rect.height - handleSize / 2, handleSize, handleSize);
+                }
+            }
+
+            function calculateIoU(box1, box2) {
+                // Determine the coordinates of the intersection rectangle
+                const xA = Math.max(box1.x, box2.x);
+                const yA = Math.max(box1.y, box2.y);
+                const xB = Math.min(box1.x + box1.width, box2.x + box2.width);
+                const yB = Math.min(box1.y + box1.height, box2.y + box2.height);
+
+                // Compute the area of intersection rectangle
+                const interWidth = Math.max(0, xB - xA);
+                const interHeight = Math.max(0, yB - yA);
+                const interArea = interWidth * interHeight;
+
+                // Compute the area of both the prediction and ground-truth rectangles
+                const box1Area = box1.width * box1.height;
+                const box2Area = box2.width * box2.height;
+
+                // Compute the union area
+                const unionArea = box1Area + box2Area - interArea;
+
+                // Handle division by zero
+                if (unionArea === 0) return 0.0;
+
+                // Compute the Intersection over Union
+                return interArea / unionArea;
+            }
+
+            function drawIoUCanvas() {
+                ctx.clearRect(0, 0, iouCanvas.width, iouCanvas.height);
+                drawRect(rect1, 'rgba(255, 99, 132, 0.6)', iouDragging === 1); // Red, semi-transparent
+                drawRect(rect2, 'rgba(54, 162, 235, 0.6)', iouDragging === 2); // Blue, semi-transparent
+
+                const iou = calculateIoU(rect1, rect2);
+                iouValueSpan.textContent = iou.toFixed(2);
+            }
+
+            function getMousePos(canvas, evt) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;    // Relationship between canvas and element for x
+                const scaleY = canvas.height / rect.height;  // Relationship between canvas and element for y
+
+                return {
+                    x: (evt.clientX - rect.left) * scaleX,
+                    y: (evt.clientY - rect.top) * scaleY
+                };
+            }
+
+            // Function to check if a point is within a resize handle
+            function isPointInResizeHandle(x, y, rect) {
+                const handleSize = 8;
+                const handleX = rect.x + rect.width - handleSize / 2;
+                const handleY = rect.y + rect.height - handleSize / 2;
+                return x >= handleX && x <= handleX + handleSize &&
+                       y >= handleY && y <= handleY + handleSize;
+            }
+
+            iouCanvas.addEventListener('mousedown', (e) => {
+                const mousePos = getMousePos(iouCanvas, e);
+                const { x, y } = mousePos;
+
+                if (isPointInResizeHandle(x, y, rect1)) {
+                    iouDragging = 1;
+                    iouResizeHandle = 'bottomRight';
+                    return;
+                }
+                if (isPointInResizeHandle(x, y, rect2)) {
+                    iouDragging = 2;
+                    iouResizeHandle = 'bottomRight';
+                    return;
+                }
+
+                if (x > rect1.x && x < rect1.x + rect1.width && y > rect1.y && y < rect1.y + rect1.height) {
+                    iouDragging = 1;
+                } else if (x > rect2.x && x < rect2.x + rect2.width && y > rect2.y && y < rect2.y + rect2.height) {
+                    iouDragging = 2;
+                }
+            });
+
+            iouCanvas.addEventListener('mousemove', (e) => {
+                if (iouDragging) {
+                    const mousePos = getMousePos(iouCanvas, e);
+                    // Use initial click offset to prevent box "jumping"
+                    let targetRect = (iouDragging === 1) ? rect1 : rect2;
+
+                    if (iouResizeHandle === 'bottomRight') {
+                        targetRect.width = Math.max(10, mousePos.x - targetRect.x);
+                        targetRect.height = Math.max(10, mousePos.y - targetRect.y);
+                    } else {
+                        // For dragging, update x and y directly based on mouse position
+                        const prevX = (iouDragging === 1 ? rect1 : rect2).x;
+                        const prevY = (iouDragging === 1 ? rect1 : rect2).y;
+                        const dx = mousePos.x - prevX; // Calculate change in mouse position
+                        const dy = mousePos.y - prevY; // Calculate change in mouse position
+                        targetRect.x += dx;
+                        targetRect.y += dy;
+                    }
+
+                    // Keep rectangles within canvas bounds
+                    targetRect.x = Math.max(0, Math.min(targetRect.x, iouCanvas.width - targetRect.width));
+                    targetRect.y = Math.max(0, Math.min(targetRect.y, iouCanvas.height - targetRect.height));
+                    targetRect.width = Math.max(10, targetRect.width); // Minimum width
+                    targetRect.height = Math.max(10, targetRect.height); // Minimum height
+
+                    drawIoUCanvas();
+                }
+            });
+
+            iouCanvas.addEventListener('mouseup', () => {
+                iouDragging = null;
+                iouResizeHandle = null;
+                drawIoUCanvas(); // Redraw once more to ensure handles disappear
+            });
+
+            // Handle canvas resizing for responsiveness
+            const resizeIoUCanvas = () => {
+                const container = iouCanvas.parentElement;
+                iouCanvas.width = container.clientWidth;
+                iouCanvas.height = container.clientHeight;
+                drawIoUCanvas();
+            };
+
+            window.addEventListener('resize', resizeIoUCanvas); // Resize on window resize
+            resizeIoUCanvas(); // Initial draw and size setup
+
+
+            // Interactive: Anchor Box & NMS Visualization (Conceptual) (14.4)
+            const generateAnchorsBtn = document.getElementById('generateAnchorsBtn');
+            const applyNMSBtn = document.getElementById('applyNMSBtn');
+            const nmsContainer = document.getElementById('nmsContainer');
+            const nmsStatus = document.getElementById('nmsStatus');
+
+            let predictedBoxes = [];
+
+            const generateConceptualBoxes = () => {
+                // Clear previous boxes
+                nmsContainer.innerHTML = '';
+                predictedBoxes = [];
+                applyNMSBtn.disabled = true;
+                nmsStatus.textContent = '';
+
+                const containerWidth = nmsContainer.clientWidth;
+                const containerHeight = nmsContainer.clientHeight;
+
+                // Example "ground truth" box (red)
+                const gtBox = {x: 0.3 * containerWidth, y: 0.35 * containerHeight, width: 0.4 * containerWidth, height: 0.5 * containerHeight, score: 1.0, label: 'Object', isGT: true, color: 'red'};
+                // Add to DOM
+                const gtDiv = document.createElement('div');
+                gtDiv.classList.add('nms-box', 'original');
+                Object.assign(gtDiv.style, {
+                    left: `${gtBox.x}px`,
+                    top: `${gtBox.y}px`,
+                    width: `${gtBox.width}px`,
+                    height: `${gtBox.height}px`,
+                    borderColor: gtBox.color,
+                });
+                gtDiv.textContent = 'GT';
+                nmsContainer.appendChild(gtDiv);
+
+
+                // Generate a few overlapping "predicted" boxes (blue-ish)
+                const predefinedPredictions = [
+                    // A good prediction, high score, good IoU
+                    { x: 0.32, y: 0.37, width: 0.38, height: 0.48, score: 0.98, label: 'Object', color: '#34d399' },
+                    // Slightly offset, good score
+                    { x: 0.28, y: 0.33, width: 0.42, height: 0.52, score: 0.92, label: 'Object', color: '#6ee7b7' },
+                    // Smaller, lower score, but still overlaps
+                    { x: 0.35, y: 0.40, width: 0.30, height: 0.40, score: 0.75, label: 'Object', color: '#a78bfa' },
+                    // Another overlapping, medium score
+                    { x: 0.31, y: 0.36, width: 0.41, height: 0.49, score: 0.85, label: 'Object', color: '#c4b5fd' },
+                    // A false positive (low overlap or different class conceptually)
+                    { x: 0.1, y: 0.1, width: 0.15, height: 0.15, score: 0.2, label: 'Background', color: '#94a3b8' }
+                ];
+
+                predictedBoxes = predefinedPredictions.map((box, index) => {
+                    const absBox = {
+                        x: box.x * containerWidth,
+                        y: box.y * containerHeight,
+                        width: box.width * containerWidth,
+                        height: box.height * containerHeight,
+                        score: box.score,
+                        label: box.label,
+                        color: box.color,
+                        id: `pred-box-${index}`
+                    };
+                    const div = document.createElement('div');
+                    div.classList.add('nms-box');
+                    Object.assign(div.style, {
+                        left: `${absBox.x}px`,
+                        top: `${absBox.y}px`,
+                        width: `${absBox.width}px`,
+                        height: `${absBox.height}px`,
+                        borderColor: absBox.color,
+                        backgroundColor: `${absBox.color.replace(')', ', 0.3)')}`
+                    });
+                    div.innerHTML = `<span style="background-color: ${absBox.color.replace(')', ', 0.8)')}; padding: 2px 5px; border-radius: 3px;">${absBox.label} (${absBox.score.toFixed(2)})</span>`;
+                    nmsContainer.appendChild(div);
+                    return { element: div, ...absBox };
+                });
+
+                applyNMSBtn.disabled = false;
+                nmsStatus.textContent = `Generated ${predictedBoxes.length} conceptual predicted boxes. Click "Apply NMS".`;
+            };
+
+            generateAnchorsBtn.addEventListener('click', generateConceptualBoxes);
+
+            applyNMSBtn.addEventListener('click', () => {
+                if (predictedBoxes.length === 0) {
+                    nmsStatus.textContent = 'Please generate anchor boxes first.';
+                    return;
+                }
+
+                // Sort by score in descending order
+                predictedBoxes.sort((a, b) => b.score - a.score);
+
+                let finalDetections = [];
+                let suppressedIndices = new Set();
+                const iouThreshold = 0.5; // Example IoU threshold for NMS
+
+                for (let i = 0; i < predictedBoxes.length; i++) {
+                    if (suppressedIndices.has(i)) {
+                        continue;
+                    }
+
+                    const currentBox = predictedBoxes[i];
+                    finalDetections.push(currentBox);
+                    currentBox.element.classList.add('selected'); // Highlight selected
+
+                    // Suppress overlapping boxes
+                    for (let j = i + 1; j < predictedBoxes.length; j++) {
+                        if (suppressedIndices.has(j)) {
+                            continue;
+                        }
+                        const otherBox = predictedBoxes[j];
+
+                        // Calculate IoU with scaled coordinates
+                        const iou = calculateIoU(
+                            { x: currentBox.x, y: currentBox.y, width: currentBox.width, height: currentBox.height },
+                            { x: otherBox.x, y: otherBox.y, width: otherBox.width, height: otherBox.height }
+                        );
+
+                        if (iou > iouThreshold) {
+                            suppressedIndices.add(j);
+                            otherBox.element.classList.add('suppressed'); // Visually suppress
+                        }
+                    }
+                }
+                nmsStatus.textContent = `NMS Applied. Kept ${finalDetections.length} detections.`;
+                applyNMSBtn.disabled = true; // Disable after NMS
+            });
+
+            // Interactive: Multiscale Detection (14.5)
+            const fineScaleMapDiv = document.getElementById('fineScaleMap');
+            const coarseScaleMapDiv = document.getElementById('coarseScaleMap');
+            const fineScaleStatus = document.getElementById('fineScaleStatus');
+            const coarseScaleStatus = document.getElementById('coarseScaleStatus');
+
+            // Generate cells for fine scale map (4x4)
+            const fineGrid = fineScaleMapDiv.querySelector('.feature-map-grid');
+            for (let i = 0; i < 16; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('feature-map-cell');
+                cell.dataset.index = i;
+                fineGrid.appendChild(cell);
+            }
+
+            // Generate cells for coarse scale map (2x2)
+            const coarseGrid = coarseScaleMapDiv.querySelector('.feature-map-grid');
+            for (let i = 0; i < 4; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('feature-map-cell');
+                cell.dataset.index = i;
+                coarseGrid.appendChild(cell);
+            }
+
+            // Function to reset all cells
+            const resetFeatureMaps = () => {
+                fineGrid.querySelectorAll('.feature-map-cell').forEach(cell => {
+                    cell.classList.remove('detected');
+                    cell.innerHTML = '';
+                });
+                coarseGrid.querySelectorAll('.feature-map-cell').forEach(cell => {
+                    cell.classList.remove('detected');
+                    cell.innerHTML = '';
+                });
+                fineScaleStatus.textContent = 'Click to detect small objects.';
+                coarseScaleStatus.textContent = 'Click to detect large objects.';
+            };
+
+            fineScaleMapDiv.addEventListener('click', () => {
+                resetFeatureMaps();
+                // Simulate detecting small objects in some cells
+                const smallCells = [5, 6, 9, 10, 2, 13]; // Example cells
+                smallCells.forEach(index => {
+                    const cell = fineGrid.querySelector(`[data-index="${index}"]`);
+                    if (cell) {
+                        cell.classList.add('detected');
+                        cell.innerHTML = '<div class="small-obj-box"></div>';
+                    }
+                });
+                fineScaleStatus.textContent = 'Small objects detected (e.g., birds, tiny details).';
+            });
+
+            coarseScaleMapDiv.addEventListener('click', () => {
+                resetFeatureMaps();
+                // Simulate detecting large objects in some cells
+                const largeCells = [0, 3]; // Example cells
+                largeCells.forEach(index => {
+                    const cell = coarseGrid.querySelector(`[data-index="${index}"]`);
+                    if (cell) {
+                        cell.classList.add('detected');
+                        cell.innerHTML = '<div class="large-obj-box"></div>';
+                    }
+                });
+                coarseScaleStatus.textContent = 'Large objects detected (e.g., cars, buildings).';
+            });
+
+
+            // Interactive: Object Detection Dataset (14.6)
+            const viewAnnotationBtn = document.getElementById('viewAnnotationBtn');
+            const annotationDisplay = document.getElementById('annotationDisplay');
+            const datasetDemoImage = document.getElementById('datasetDemoImage');
+
+            const sampleAnnotation = {
+                "image_id": "image_001.jpg",
+                "objects": [
+                    {
+                        "label": "cat",
+                        "bbox": [50, 60, 120, 110], // x_min, y_min, width, height
+                        "confidence": 0.98
+                    },
+                    {
+                        "label": "dog",
+                        "bbox": [130, 40, 60, 80], // x_min, y_min, width, height
+                        "confidence": 0.95
+                    },
+                    {
+                        "label": "ball",
+                        "bbox": [80, 100, 20, 20], // x_min, y_min, width, height
+                        "confidence": 0.80
+                    }
+                ]
+            };
+
+            viewAnnotationBtn.addEventListener('click', () => {
+                if (annotationDisplay.classList.contains('hidden')) {
+                    annotationDisplay.textContent = JSON.stringify(sampleAnnotation, null, 2);
+                    annotationDisplay.classList.remove('hidden');
+                    viewAnnotationBtn.textContent = 'Hide Annotation';
+                } else {
+                    annotationDisplay.classList.add('hidden');
+                    viewAnnotationBtn.textContent = 'View Annotation';
+                }
+            });
+
+            // Interactive: Single Shot Multibox Detection (SSD) (14.7)
+            const ssdSteps = {
+                'input': document.getElementById('ssdInput'),
+                'backbone': document.getElementById('ssdBackbone'),
+                'feature_maps': [document.getElementById('ssdFineMap'), document.getElementById('ssdCoarseMap')],
+                'predict': document.getElementById('ssdPredict'),
+                'nms': document.getElementById('ssdNMS'),
+                'final': document.getElementById('ssdFinal')
+            };
+
+            const resetSSDHighlight = () => {
+                Object.values(ssdSteps).forEach(step => {
+                    if (Array.isArray(step)) {
+                        step.forEach(el => el.classList.remove('ring-4', 'ring-teal-400', 'ring-offset-2'));
+                    } else {
+                        step.classList.remove('ring-4', 'ring-teal-400', 'ring-offset-2');
+                    }
+                });
+            };
+
+            window.highlightSSDStep = (stepName) => {
+                resetSSDHighlight(); // Clear previous highlights
+
+                if (stepName === 'reset') {
+                    // Already reset, nothing else to do
+                    return;
+                }
+
+                const targetStep = ssdSteps[stepName];
+                if (targetStep) {
+                    if (Array.isArray(targetStep)) {
+                        targetStep.forEach(el => el.classList.add('ring-4', 'ring-teal-400', 'ring-offset-2'));
+                    } else {
+                        targetStep.classList.add('ring-4', 'ring-teal-400', 'ring-offset-2');
+                    }
+                }
+            };
+        });
+    </script>
+</body>
+</html>

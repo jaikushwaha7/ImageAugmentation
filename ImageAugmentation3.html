@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Mentorship Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #334155; /* Dark slate text */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            flex-grow: 1; /* Allow container to grow and fill space */
+        }
+        .tab-button.active {
+            background-color: #0d9488; /* Teal-800 */
+            color: white;
+            border-bottom: 2px solid #14b8a6; /* Teal-500 */
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        /* Style for interactive elements */
+        .interactive-box {
+            border: 2px dashed #a78bfa; /* Violet-400 */
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            background-color: #ede9fe; /* Violet-100 */
+        }
+        .footer {
+            background-color: #1a202c; /* Darker footer */
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            margin-top: 2rem;
+        }
+        /* IoU Calculator Specific Styles */
+        .iou-canvas-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 75%; /* 4:3 Aspect Ratio (height:width = 3:4) */
+            background-color: #e2e8f0; /* Gray-200 */
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 1rem;
+        }
+        #iouCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-gradient-to-r from-teal-600 to-emerald-700 text-white p-4 shadow-lg rounded-b-xl">
+        <div class="container flex justify-between items-center">
+            <h1 class="text-3xl font-extrabold tracking-tight">ML Mentorship Portal</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="#welcome" class="hover:underline text-lg">Welcome</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container py-8">
+        <!-- Welcome Section -->
+        <section id="welcome" class="content-section active bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-4xl font-bold text-teal-700 mb-6">Welcome to Your Machine Learning Mentorship!</h2>
+            <p class="text-lg text-gray-700 leading-relaxed mb-4">
+                This interactive portal is designed to guide you through key concepts in computer vision, focusing on techniques vital for image analysis and object detection. We'll cover everything from preparing your data to understanding advanced detection models.
+            </p>
+            <p class="text-lg text-gray-700 leading-relaxed mb-6">
+                Use the tabs below to navigate through the topics. Each section provides detailed explanations and, where possible, interactive demonstrations to solidify your understanding. Let's dive in!
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-teal-50 p-6 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-semibold text-teal-800 mb-3">Data Augmentation</h3>
+                    <p class="text-gray-600">Learn how to make your models more robust by synthetically expanding your dataset.</p>
+                </div>
+                <div class="bg-emerald-50 p-6 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-semibold text-emerald-800 mb-3">Fine-Tuning</h3>
+                    <p class="text-gray-600">Discover the power of transfer learning by adapting pre-trained models to new tasks.</p>
+                </div>
+                <div class="bg-violet-50 p-6 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-semibold text-violet-800 mb-3">Object Detection Basics</h3>
+                    <p class="text-gray-600">Understand the fundamentals of locating and classifying objects within images.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap border-b border-gray-300 mb-8 rounded-t-lg overflow-hidden shadow-md bg-gray-50">
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100 rounded-tl-lg" data-target="image-augmentation">14.1 Image Augmentation</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100" data-target="fine-tuning">14.2 Fine-Tuning</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100" data-target="object-detection-bb">14.3 Object Detection & Bounding Boxes</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100" data-target="anchor-boxes">14.4 Anchor Boxes</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100" data-target="multiscale-detection">14.5 Multiscale Object Detection</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100" data-target="object-detection-dataset">14.6 The Object Detection Dataset</button>
+            <button class="tab-button p-4 text-gray-700 font-semibold text-center flex-1 transition duration-300 hover:bg-gray-100 rounded-tr-lg" data-target="ssd">14.7 Single Shot Multibox Detection</button>
+        </div>
+
+        <!-- Content Sections -->
+        <section id="image-augmentation" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.1 Image Augmentation</h2>
+            <p class="text-gray-700 mb-4">
+                Image augmentation is a technique used to artificially expand the training dataset by creating modified versions of existing images. This helps in regularizing the model, reducing overfitting, and improving its generalization capabilities to unseen data.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.1.1. Common Image Augmentation Methods</h3>
+            <p class="text-gray-700 mb-2">Common methods include:</p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">Flipping:</strong> Horizontally or vertically flipping images.</li>
+                <li><strong class="font-medium">Rotation:</strong> Rotating images by a certain degree.</li>
+                <li><strong class="font-medium">Cropping:</strong> Randomly cropping parts of the image.</li>
+                <li><strong class="font-medium">Shearing:</strong> Shifting one part of the image, distorting its shape.</li>
+                <li><strong class="font-medium">Color Jittering:</strong> Randomly changing brightness, contrast, saturation, or hue.</li>
+                <li><strong class="font-medium">Adding Noise:</strong> Introducing random noise to the image.</li>
+            </ul>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Image Augmentation Visualizer</h4>
+                <p class="text-gray-700 mb-4">Upload your own image and select an augmentation method to see its effect.</p>
+                <input type="file" id="imageUpload" accept="image/*" class="mb-4 p-2 border rounded-md">
+                <div class="flex flex-col items-center">
+                    <img id="original-image" src="https://placehold.co/300x300/a78bfa/ffffff?text=Original+Image" alt="Original Image" class="w-64 h-64 object-cover rounded-lg shadow-md mb-4">
+                    <img id="augmented-image" src="" alt="Augmented Image" class="w-64 h-64 object-cover rounded-lg shadow-md mb-4 hidden">
+                    <div class="flex space-x-4 mb-4">
+                        <button class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition duration-200" onclick="augmentImage('flip')" id="flipBtn" disabled>Flip</button>
+                        <button class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition duration-200" onclick="augmentImage('rotate')" id="rotateBtn" disabled>Rotate</button>
+                        <button class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition duration-200" onclick="augmentImage('crop')" id="cropBtn" disabled>Crop</button>
+                        <button class="px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed">Color Jitter (Soon)</button>
+                        <button class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-200" onclick="resetImage()" id="resetBtn" disabled>Reset</button>
+                    </div>
+                     <p id="augmentation-effect" class="text-gray-600 text-center italic"></p>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.1.2. Training with Image Augmentation</h3>
+            <p class="text-gray-700 mb-4">
+                During training, image augmentation is applied on-the-fly to the input images before they are fed into the neural network. This means each epoch, the model sees slightly different versions of the same image, preventing it from memorizing the training data and improving its ability to generalize to new, unseen data. It's a powerful regularization technique.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.1.3. Summary</h3>
+            <p class="text-gray-700">
+                Image augmentation is crucial for building robust deep learning models, especially when dataset size is limited. It helps improve model generalization and reduces overfitting by exposing the model to a wider variety of relevant data variations.
+            </p>
+        </section>
+
+        <section id="fine-tuning" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.2 Fine-Tuning</h2>
+            <p class="text-gray-700 mb-4">
+                Fine-tuning is a transfer learning technique where a pre-trained model (trained on a very large dataset, e.g., ImageNet) is adapted for a new, often smaller, related task. Instead of training a deep network from scratch, which requires massive amounts of data and computational resources, you leverage the features learned by the pre-trained model.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.2.1. Steps</h3>
+            <ol class="list-decimal list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">Load Pre-trained Model:</strong> Start with a model (e.g., ResNet, VGG, Inception) trained on a large dataset.</li>
+                <li><strong class="font-medium">Replace Output Layer:</strong> The original model's output layer is designed for its original task (e.g., 1000 classes for ImageNet). Replace this with a new layer (or layers) suitable for your specific task (e.g., 2 classes for hot dog vs. not hot dog).</li>
+                <li><strong class="font-medium">Freeze Early Layers:</strong> Freeze the weights of the initial layers of the pre-trained model. These layers typically learn general features (edges, textures) that are useful across many image tasks. Only train the newly added layers.</li>
+                <li><strong class="font-medium">Train the New Layers:</strong> Train the model for a few epochs with a small learning rate. This helps the new layers learn to interpret the high-level features from the frozen layers.</li>
+                <li><strong class="font-medium">Unfreeze Some Layers (Optional):</strong> For even better performance, you can unfreeze some of the later convolutional layers (closer to the output) and continue training with a very small learning rate. This allows the model to slightly adapt its learned features to your specific dataset.</li>
+            </ol>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.2.2. Hot Dog Recognition</h3>
+            <p class="text-gray-700 mb-4">
+                A classic example is fine-tuning a model trained on ImageNet (which contains diverse categories) to recognize "hot dogs" vs. "not hot dogs". You would take a pre-trained model, replace its final classification layer with a new one that has two output neurons (for "hot dog" and "not hot dog"), and then fine-tune it on a dataset of hot dog images. The early layers would already understand what "food" or "round shapes" look like, making the new task much easier to learn.
+            </p>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Fine-Tuning Conceptual Diagram</h4>
+                <p class="text-gray-700 mb-4">Observe how a pre-trained model is adapted for a new task.</p>
+                <div class="flex flex-col items-center justify-center space-y-4">
+                    <div class="flex items-center space-x-8">
+                        <div class="flex flex-col items-center">
+                            <div class="w-24 h-24 bg-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">Input Image</div>
+                        </div>
+                        <div class="text-4xl">→</div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-32 h-32 bg-gray-300 rounded-lg flex items-center justify-center text-gray-700 font-bold text-sm shadow-md">
+                                <p class="text-center">Pre-trained <br>Feature Extractor<br>(Frozen Layers)</p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Learns general features (edges, textures)</p>
+                        </div>
+                        <div class="text-4xl">→</div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-24 h-24 bg-green-400 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                <p class="text-center">New Classifier<br>(Trained)</p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Adapts to specific task</p>
+                        </div>
+                        <div class="text-4xl">→</div>
+                        <div class="w-24 h-24 bg-red-400 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">Output Classes<br>(e.g., Hot Dog / Not Hot Dog)</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.2.3. Summary</h3>
+            <p class="text-gray-700">
+                Fine-tuning is a powerful and efficient way to achieve high performance on new image tasks, especially when data is limited, by leveraging the vast knowledge embedded in pre-trained deep learning models.
+            </p>
+        </section>
+
+        <section id="object-detection-bb" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.3 Object Detection and Bounding Boxes</h2>
+            <p class="text-gray-700 mb-4">
+                Object detection is a computer vision task that involves identifying and locating objects within an image or video. Unlike image classification, which simply tells you what the main object in an image is, object detection tells you *what* objects are present and *where* they are.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.3.1. Bounding Boxes</h3>
+            <p class="text-gray-700 mb-4">
+                The location of an object is typically indicated by a <strong class="font-medium">bounding box</strong>, which is an axis-aligned rectangle tightly enclosing the object.
+                Bounding boxes are usually represented by one of two common formats:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">$(x, y, width, height)$:</strong> The coordinates $(x, y)$ of the top-left corner of the box, followed by its width and height.</li>
+                <li><strong class="font-medium">$(x_{min}, y_{min}, x_{max}, y_{max})$:</strong> The coordinates of the top-left corner $(x_{min}, y_{min})$ and the bottom-right corner $(x_{max}, y_{max})$ of the box.</li>
+            </ul>
+            <p class="text-gray-700 mb-4">
+                During training, the model learns to predict these coordinates along with the class label for each detected object.
+            </p>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Bounding Box Example</h4>
+                <p class="text-gray-700 mb-4">A simple visualization of bounding boxes around detected objects.</p>
+                <div class="relative w-full max-w-lg mx-auto">
+                    <img src="https://placehold.co/600x400/94a3b8/ffffff?text=Example+Scene" alt="Example Scene" class="w-full h-auto rounded-lg shadow-md">
+                    <div class="absolute border-2 border-red-500 rounded-md" style="left: 10%; top: 20%; width: 30%; height: 40%;">
+                        <span class="absolute -top-6 left-0 bg-red-500 text-white text-xs px-2 py-1 rounded-t-md">Car (0.95)</span>
+                    </div>
+                    <div class="absolute border-2 border-blue-500 rounded-md" style="left: 55%; top: 50%; width: 20%; height: 30%;">
+                        <span class="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded-t-md">Person (0.88)</span>
+                    </div>
+                    <div class="absolute border-2 border-green-500 rounded-md" style="left: 70%; top: 10%; width: 15%; height: 25%;">
+                        <span class="absolute -top-6 left-0 bg-green-500 text-white text-xs px-2 py-1 rounded-t-md">Tree (0.92)</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.3.2. Summary</h3>
+            <p class="text-gray-700">
+                Object detection aims to both classify and localize objects in an image, using bounding boxes to specify their exact positions.
+            </p>
+        </section>
+
+        <section id="anchor-boxes" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.4 Anchor Boxes</h2>
+            <p class="text-gray-700 mb-4">
+                Anchor boxes (or prior boxes) are a set of predefined bounding box proposals of a fixed size and aspect ratio, placed at every location (or specific locations) in an image. Object detection models use these anchor boxes as a starting point to predict the actual bounding boxes of objects.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.4.1. Generating Multiple Anchor Boxes</h3>
+            <p class="text-gray-700 mb-4">
+                For each spatial location on a feature map (which corresponds to a region in the original image), multiple anchor boxes are generated, typically with different scales and aspect ratios. For example, you might use anchor boxes with aspect ratios like 1:1, 1:2, 2:1 and scales like small, medium, large. This allows the model to predict objects of various shapes and sizes.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.4.2. Intersection over Union (IoU)</h3>
+            <p class="text-gray-700 mb-4">
+                Intersection over Union (IoU) is a crucial metric in object detection used to measure the overlap between two bounding boxes. It is calculated as the area of intersection divided by the area of union of the two boxes:
+                $$ \text{IoU} = \frac{\text{Area of Intersection}}{\text{Area of Union}} $$
+                A higher IoU value indicates a better overlap. In object detection, a predicted bounding box is usually considered a true positive if its IoU with a ground-truth bounding box exceeds a certain threshold (e.g., 0.5 or 0.7).
+            </p>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: IoU Calculator</h4>
+                <p class="text-gray-700 mb-2">Drag and resize the red and blue boxes to calculate their Intersection over Union (IoU).</p>
+                <div class="iou-canvas-container">
+                    <canvas id="iouCanvas"></canvas>
+                </div>
+                <p class="text-center mt-2 text-lg font-bold text-gray-800">IoU: <span id="iouValue" class="text-teal-600">0.00</span></p>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.4.3. Labeling Anchor Boxes in Training Data</h3>
+            <p class="text-gray-700 mb-4">
+                During training, each ground-truth bounding box (the actual object location) is matched with the anchor box that has the highest IoU with it (and is above a certain threshold). This anchor box is then responsible for predicting that object. Anchor boxes with high IoU to ground-truth boxes are assigned a positive label (object present), while those with low IoU are assigned a negative label (background).
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.4.4. Predicting Bounding Boxes with Non-Maximum Suppression (NMS)</h3>
+            <p class="text-gray-700 mb-4">
+                Object detection models often predict many overlapping bounding boxes for the same object. <strong class="font-medium">Non-Maximum Suppression (NMS)</strong> is an algorithm used to filter these redundant predictions, keeping only the most confident and representative bounding box for each object.
+                The process typically involves:
+            </p>
+            <ol class="list-decimal list-inside text-gray-700 ml-4 mb-4">
+                <li>Sort all predicted bounding boxes by their confidence scores (how likely the box contains an object).</li>
+                <li>Select the box with the highest confidence score and add it to the final list of detections.</li>
+                <li>Remove all other boxes that have a high IoU with the selected box (i.e., they largely overlap).</li>
+                <li>Repeat until no more boxes are left.</li>
+            </ol>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.4.5. Summary</h3>
+            <p class="text-gray-700">
+                Anchor boxes provide a systematic way to predict objects of various sizes and aspect ratios, while IoU is key for evaluating overlap and NMS helps in refining the final set of object detections.
+            </p>
+        </section>
+
+        <section id="multiscale-detection" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.5 Multiscale Object Detection</h2>
+            <p class="text-gray-700 mb-4">
+                Objects in images can vary significantly in size. Detecting very small objects and very large objects effectively within the same image is a challenge for single-scale detection methods. Multiscale object detection addresses this by utilizing feature maps from different layers of a convolutional neural network.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.5.1. Multiscale Anchor Boxes</h3>
+            <p class="text-gray-700 mb-4">
+                In a deep CNN, early layers capture fine-grained details and have a higher spatial resolution, making them suitable for detecting small objects. Later layers, after more convolutions and pooling, have a coarser spatial resolution but capture higher-level, semantic features, making them better for detecting large objects.
+                Multiscale anchor boxes are applied to these different feature maps:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">High-resolution feature maps (early layers):</strong> Used with smaller anchor boxes to detect small objects.</li>
+                <li><strong class="font-medium">Low-resolution feature maps (later layers):</strong> Used with larger anchor boxes to detect large objects.</li>
+            </ul>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.5.2. Multiscale Detection</h3>
+            <p class="text-gray-700 mb-4">
+                The network makes predictions (class probabilities and bounding box offsets) independently at multiple scales, using the corresponding feature maps. These predictions are then combined, and NMS is applied globally to produce the final set of detections. This approach allows the model to be robust to varying object sizes.
+            </p>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Multiscale Detection Concept</h4>
+                <p class="text-gray-700 mb-4">Visualize how different objects are detected at different feature map scales.</p>
+                <div class="flex flex-col items-center">
+                    <img src="https://placehold.co/400x250/9ca3af/ffffff?text=Input+Image+with+Objects" alt="Multiscale Input" class="w-full max-w-md rounded-lg shadow-md mb-4">
+                    <div class="flex justify-between w-full max-w-md mt-4">
+                        <div class="flex flex-col items-center border border-gray-300 p-2 rounded-md bg-gray-100">
+                            <div class="w-20 h-20 bg-blue-300 rounded-md flex items-center justify-center text-sm font-semibold text-gray-800">Fine Scale (Small Objects)</div>
+                            <p class="text-xs text-gray-600 mt-1">e.g., small bird</p>
+                            <div class="border-2 border-green-500 rounded-sm w-8 h-8 relative -mt-10 mr-4"></div>
+                        </div>
+                        <div class="flex flex-col items-center border border-gray-300 p-2 rounded-md bg-gray-100">
+                            <div class="w-20 h-20 bg-yellow-300 rounded-md flex items-center justify-center text-sm font-semibold text-gray-800">Coarse Scale (Large Objects)</div>
+                            <p class="text-xs text-gray-600 mt-1">e.g., car</p>
+                            <div class="border-2 border-red-500 rounded-sm w-16 h-12 relative -mt-10 ml-4"></div>
+                        </div>
+                    </div>
+                     <p class="text-gray-600 text-center italic mt-4">Different feature maps detect objects of different sizes effectively.</p>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.5.3. Summary</h3>
+            <p class="text-gray-700">
+                Multiscale object detection is essential for detecting objects across a wide range of sizes by leveraging feature maps at different resolutions within the network architecture.
+            </p>
+        </section>
+
+        <section id="object-detection-dataset" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.6 The Object Detection Dataset</h2>
+            <p class="text-gray-700 mb-4">
+                Training robust object detection models requires large, meticulously annotated datasets. These datasets consist of images, where each object of interest is labeled with its class (e.g., "person", "car") and the coordinates of its bounding box.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.6.1. Downloading the Dataset</h3>
+            <p class="text-gray-700 mb-4">
+                Popular object detection datasets include:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">COCO (Common Objects in Context):</strong> A very large-scale object detection, segmentation, and captioning dataset with over 200,000 labeled images and 80 object categories.</li>
+                <li><strong class="font-medium">Pascal VOC (Visual Object Classes):</strong> A smaller but widely used dataset for object detection and classification, typically with 20 object categories.</li>
+                <li><strong class="font-medium">Open Images Dataset:</strong> A dataset with millions of images and hundreds of object classes, often with more complex scenes.</li>
+            </ul>
+            <p class="text-gray-700">
+                These datasets are typically downloaded as large archives containing image files and separate annotation files (often in XML or JSON format).
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.6.2. Reading the Dataset</h3>
+            <p class="text-gray-700 mb-4">
+                Reading these datasets involves parsing the annotation files to extract the image paths, bounding box coordinates, and corresponding class labels for each object in every image. This data is then loaded into memory or a suitable data structure for batching and feeding into the neural network during training.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.6.3. Demonstration (Conceptual)</h3>
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: Dataset Structure Conceptualization</h4>
+                <p class="text-gray-700 mb-4">Understand the basic structure of an object detection dataset.</p>
+                <div class="flex flex-col items-center">
+                    <div class="flex items-center space-x-8">
+                        <div class="flex flex-col items-center">
+                            <div class="w-32 h-32 bg-blue-200 rounded-lg flex items-center justify-center text-blue-800 font-bold text-sm shadow-md">
+                                <p class="text-center">Images Folder</p>
+                            </div>
+                            <ul class="list-disc list-inside text-xs text-gray-600 mt-2">
+                                <li>image_001.jpg</li>
+                                <li>image_002.jpg</li>
+                                <li>...</li>
+                            </ul>
+                        </div>
+                        <div class="text-4xl">+</div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-32 h-32 bg-green-200 rounded-lg flex items-center justify-center text-green-800 font-bold text-sm shadow-md">
+                                <p class="text-center">Annotations File<br>(e.g., XML/JSON)</p>
+                            </div>
+                            <pre class="bg-gray-100 p-2 rounded-md text-xs mt-2 text-left">
+<code>{
+  "image_001.jpg": [
+    {"bbox": [x1,y1,x2,y2], "label": "cat"},
+    {"bbox": [x3,y3,x4,y4], "label": "dog"}
+  ],
+  ...
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.6.4. Summary</h3>
+            <p class="text-gray-700">
+                High-quality, annotated datasets are the backbone of effective object detection models, providing the ground truth for the model to learn from.
+            </p>
+        </section>
+
+        <section id="ssd" class="content-section bg-white p-8 rounded-lg shadow-xl mb-8">
+            <h2 class="text-3xl font-bold text-teal-700 mb-4">14.7 Single Shot Multibox Detection (SSD)</h2>
+            <p class="text-gray-700 mb-4">
+                Single Shot Multibox Detector (SSD) is a popular object detection algorithm known for its balance of speed and accuracy. Unlike two-stage detectors (like Faster R-CNN) that first propose regions and then classify them, SSD performs both localization and classification in a single forward pass, making it faster.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.7.1. Model</h3>
+            <p class="text-gray-700 mb-4">
+                SSD builds upon a standard feed-forward convolutional network (e.g., VGG-16, ResNet) as its base network. It then adds several convolutional layers to the end of the base network to produce feature maps of decreasing sizes (multiscale).
+                <br><br>
+                For each of these feature maps, SSD applies small convolutional filters to predict:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">Offsets for default (anchor) boxes:</strong> Adjustments to the predefined anchor boxes to better fit the actual object.</li>
+                <li><strong class="font-medium">Class probabilities:</strong> Scores for each object category for each anchor box.</li>
+            </ul>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.7.2. Training</h3>
+            <p class="text-gray-700 mb-4">
+                SSD's training objective function (loss) is a combination of two parts:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 ml-4 mb-4">
+                <li><strong class="font-medium">Localization Loss:</strong> Measures how well the predicted bounding boxes align with the ground-truth boxes (e.g., Smooth L1 loss).</li>
+                <li><strong class="font-medium">Confidence Loss:</strong> Measures how well the model classifies the objects within the bounding boxes (e.g., softmax loss for multiple classes, or binary cross-entropy for foreground/background).</li>
+            </ul>
+            <p class="text-gray-700">
+                During training, techniques like hard negative mining (focusing on difficult background examples) are used to balance the number of positive and negative samples, as most anchor boxes are background.
+            </p>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3">14.7.3. Prediction</h3>
+            <p class="text-gray-700 mb-4">
+                During inference, SSD generates a large number of predictions across all feature maps. After applying the predicted offsets to the anchor boxes, Non-Maximum Suppression (NMS) is used to filter out highly overlapping boxes and obtain the final, distinct object detections.
+            </p>
+
+            <div class="interactive-box bg-purple-50">
+                <h4 class="text-xl font-semibold text-violet-700 mb-2">Interactive: SSD Simplified Flow</h4>
+                <p class="text-gray-700 mb-4">A high-level view of how SSD processes an image.</p>
+                <div class="flex flex-col items-center justify-center space-y-4">
+                    <div class="w-32 h-20 bg-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">Input Image</div>
+                    <div class="text-4xl">↓</div>
+                    <div class="w-48 h-20 bg-gray-300 rounded-lg flex items-center justify-center text-gray-700 font-bold text-sm shadow-md text-center">Base Network (e.g., VGG)<br>Feature Extraction</div>
+                    <div class="text-4xl">↓</div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-24 h-16 bg-yellow-300 rounded-lg flex items-center justify-center text-yellow-800 font-bold text-xs shadow-md">Fine Scale Feature Map</div>
+                        <div class="text-4xl">→</div>
+                        <div class="w-24 h-16 bg-red-300 rounded-lg flex items-center justify-center text-red-800 font-bold text-xs shadow-md">Coarse Scale Feature Map</div>
+                    </div>
+                    <div class="text-4xl">↓ (Parallel Predictions)</div>
+                    <div class="w-64 h-24 bg-green-400 rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md text-center">
+                        <p>Predict Bounding Boxes & Class Scores</p>
+                        <p class="text-xs">(for many anchor boxes at each scale)</p>
+                    </div>
+                    <div class="text-4xl">↓</div>
+                    <div class="w-32 h-20 bg-purple-400 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">NMS (Non-Maximum Suppression)</div>
+                    <div class="text-4xl">↓</div>
+                    <div class="w-32 h-20 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">Final Detections</div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-teal-600 mb-3 mt-6">14.7.4. Summary</h3>
+            <p class="text-gray-700">
+                SSD is an efficient one-stage object detector that combines features from multiple scales to predict bounding boxes and class probabilities directly, making it suitable for real-time applications.
+            </p>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 ML Mentorship Portal. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // JavaScript for tab functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const contentSections = document.querySelectorAll('.content-section');
+            const welcomeSection = document.getElementById('welcome');
+
+            // Function to show a specific section
+            const showSection = (targetId) => {
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                tabButtons.forEach(button => {
+                    button.classList.remove('active');
+                });
+
+                document.getElementById(targetId).classList.add('active');
+                if (targetId !== 'welcome') {
+                     document.querySelector(`.tab-button[data-target="${targetId}"]`).classList.add('active');
+                }
+            };
+
+            // Set initial active tab (e.g., welcome or first content tab)
+            // If the URL hash exists, try to activate that section
+            if (window.location.hash) {
+                const targetFromHash = window.location.hash.substring(1);
+                const sectionExists = Array.from(contentSections).some(section => section.id === targetFromHash);
+                if (sectionExists) {
+                    showSection(targetFromHash);
+                } else {
+                    showSection('welcome'); // Fallback to welcome if hash is invalid
+                }
+            } else {
+                showSection('welcome'); // Default to welcome section
+            }
+
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+                    showSection(targetId);
+                    window.location.hash = targetId; // Update URL hash
+                });
+            });
+
+            // Handle welcome section navigation (if added to general nav)
+            const welcomeLink = document.querySelector('nav ul li a[href="#welcome"]');
+            if (welcomeLink) {
+                welcomeLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showSection('welcome');
+                    window.location.hash = 'welcome';
+                });
+            }
+
+            // Interactive: Image Augmentation
+            const originalImage = document.getElementById('original-image');
+            const augmentedImage = document.getElementById('augmented-image');
+            const augmentationEffectText = document.getElementById('augmentation-effect');
+            const imageUpload = document.getElementById('imageUpload');
+            const flipBtn = document.getElementById('flipBtn');
+            const rotateBtn = document.getElementById('rotateBtn');
+            const cropBtn = document.getElementById('cropBtn');
+            const resetBtn = document.getElementById('resetBtn');
+
+            let currentRotation = 0;
+            let isFlippedX = false; // New state variable for horizontal flip
+            let baseImageSrc = "https://placehold.co/300x300/a78bfa/ffffff?text=Original+Image"; // Default placeholder
+            let currentDisplayImageSrc = baseImageSrc; // The image currently shown by originalImage/augmentedImage
+
+            // Function to update the transform property based on current state
+            const applyTransforms = () => {
+                let transformString = '';
+                if (isFlippedX) {
+                    transformString += 'scaleX(-1) ';
+                }
+                if (currentRotation !== 0) {
+                    transformString += `rotate(${currentRotation}deg)`;
+                }
+                augmentedImage.style.transform = transformString.trim(); // Apply combined transforms
+            };
+
+            // Function to enable/disable augmentation buttons
+            const toggleAugmentationButtons = (enable) => {
+                flipBtn.disabled = !enable;
+                rotateBtn.disabled = !enable;
+                cropBtn.disabled = !enable;
+                resetBtn.disabled = !enable;
+                // Add/remove cursor-not-allowed for visual feedback
+                [flipBtn, rotateBtn, cropBtn, resetBtn].forEach(btn => {
+                    if (enable) {
+                        btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                        btn.classList.add('bg-teal-500', 'hover:bg-teal-600');
+                        if (btn.id === 'resetBtn') {
+                            btn.classList.remove('bg-teal-500', 'hover:bg-teal-600');
+                            btn.classList.add('bg-red-500', 'hover:bg-red-600');
+                        }
+                    } else {
+                        btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                        btn.classList.remove('bg-teal-500', 'hover:bg-teal-600', 'bg-red-500', 'hover:bg-red-600');
+                    }
+                });
+            };
+
+            // Initially disable buttons, and ensure original image is set to placeholder
+            originalImage.src = baseImageSrc;
+            toggleAugmentationButtons(false);
+
+
+            window.augmentImage = (method) => {
+                // Ensure an image is loaded before augmenting.
+                // This condition should effectively check if it's the initial placeholder
+                // or if an image has been explicitly uploaded.
+                if (currentDisplayImageSrc === baseImageSrc && imageUpload.files.length === 0) {
+                     augmentationEffectText.textContent = 'Please upload an image first to apply augmentations.';
+                     return;
+                }
+
+                // Make sure augmented image is visible and original is hidden
+                originalImage.classList.add('hidden');
+                augmentedImage.classList.remove('hidden');
+                augmentedImage.src = currentDisplayImageSrc; // Ensure the augmented image displays the base image
+
+                let effect = '';
+                switch (method) {
+                    case 'flip':
+                        isFlippedX = !isFlippedX;
+                        effect = isFlippedX ? 'Image flipped horizontally.' : 'Image un-flipped.';
+                        applyTransforms();
+                        break;
+                    case 'rotate':
+                        currentRotation = (currentRotation + 90) % 360;
+                        effect = `Image rotated by ${currentRotation} degrees.`;
+                        applyTransforms();
+                        break;
+                    case 'crop':
+                        // Crop remains conceptual without advanced canvas manipulation or a library.
+                        effect = 'Image conceptually cropped. In a real scenario, this would apply a random crop to the pixel data.';
+                        // No actual visual change for crop other than text explanation
+                        break;
+                    default:
+                        break;
+                }
+                augmentationEffectText.textContent = effect;
+            };
+
+            window.resetImage = () => {
+                // Reset states
+                currentRotation = 0;
+                isFlippedX = false;
+
+                // Reset images
+                originalImage.classList.remove('hidden');
+                augmentedImage.classList.add('hidden');
+                augmentedImage.style.transform = ''; // Clear transforms on augmented image
+                augmentedImage.src = currentDisplayImageSrc; // Ensure it's reset to the source
+
+                augmentationEffectText.textContent = 'Image reset to original state.';
+            };
+
+            imageUpload.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        currentDisplayImageSrc = e.target.result; // Store the uploaded image as the current base
+                        originalImage.src = currentDisplayImageSrc; // Update original image display
+                        augmentedImage.src = currentDisplayImageSrc; // Update augmented image display
+                        originalImage.classList.add('hidden'); // Hide original, show augmented for manipulation
+                        augmentedImage.classList.remove('hidden');
+                        augmentationEffectText.textContent = 'Image uploaded successfully!';
+                        currentRotation = 0; // Reset rotation for new image
+                        isFlippedX = false; // Reset flip state for new image
+                        applyTransforms(); // Apply any initial (zero) transforms
+                        toggleAugmentationButtons(true); // Enable buttons
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    // If no file selected, revert to placeholder
+                    currentDisplayImageSrc = baseImageSrc;
+                    originalImage.src = baseImageSrc;
+                    augmentedImage.src = ''; // Clear augmented image src
+                    originalImage.classList.remove('hidden'); // Show original placeholder
+                    augmentedImage.classList.add('hidden'); // Hide augmented
+                    augmentationEffectText.textContent = 'No image uploaded, showing default placeholder.';
+                    toggleAugmentationButtons(false); // Disable buttons
+                    currentRotation = 0;
+                    isFlippedX = false;
+                    applyTransforms(); // Reset transforms visually
+                }
+            });
+        });
+    </script>
+</body>
+</html>

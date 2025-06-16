@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Vision Mentorship Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        pre {
+            background-color: #1f2937;
+            color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        .sidebar-hidden {
+            transform: translateX(-100%);
+        }
+        .code-block {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="flex h-screen">
+        <!-- Sidebar Navigation -->
+        <nav id="sidebar" class="sidebar w-64 bg-blue-900 text-white p-4 fixed h-full overflow-y-auto">
+            <h2 class="text-xl font-bold mb-4">Mentorship Topics</h2>
+            <ul class="space-y-2">
+                <li><a href="#section-14.1" class="hover:text-blue-300">14.1 Image Augmentation</a></li>
+                <li><a href="#section-14.2" class="hover:text-blue-300">14.2 Fine-Tuning</a></li>
+                <li><a href="#section-14.3" class="hover:text-blue-300">14.3 Object Detection</a></li>
+                <li><a href="#section-14.4" class="hover:text-blue-300">14.4 Anchor Boxes</a></li>
+                <li><a href="#section-14.5" class="hover:text-blue-300">14.5 Multiscale Detection</a></li>
+                <li><a href="#section-14.6" class="hover:text-blue-300">14.6 Dataset Handling</a></li>
+                <li><a href="#section-14.7" class="hover:text-blue-300">14.7 SSD Model</a></li>
+            </ul>
+            <button id="toggleSidebar" class="mt-4 bg-blue-700 text-white px-4 py-2 rounded">Hide Sidebar</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 overflow-y-auto ml-64">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-blue-900">🎯 Computer Vision Mentorship Guide</h1>
+                <p class="text-lg text-gray-600">Master Image Augmentation, Fine-Tuning, and Object Detection</p>
+            </header>
+
+            <!-- 14.1 Image Augmentation -->
+            <section id="section-14.1" class="mb-12">
+                <h2 class="text-2xl font-semibold text-blue-800 mb-4">14.1 Image Augmentation</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-medium mb-2">14.1.1 Common Image Augmentation Methods</h3>
+                    <p class="mb-4">Image augmentation applies transformations to increase dataset diversity and model robustness. Common methods include:</p>
+                    <ul class="list-disc pl-6 mb-4">
+                        <li>Geometric: Rotation, flipping, scaling, cropping.</li>
+                        <li>Color: Brightness, contrast, hue adjustments.</li>
+                        <li>Noise: Gaussian noise, random erasing.</li>
+                    </ul>
+                    <div class="mb-4">
+                        <h4 class="font-medium">📸 Augmentation Visualizer</h4>
+                        <div class="flex space-x-4 mt-2">
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="applyAugmentation('rotate')">Rotate</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="applyAugmentation('flip')">Flip</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="applyAugmentation('brightness')">Brightness</button>
+                        </div>
+                        <p id="augmentationStatus" class="mt-2 text-gray-600">Click a button to see augmentation effect...</p>
+                    </div>
+                    <pre class="code-block"><code class="language-python">import torchvision.transforms as transforms
+from PIL import Image
+
+image = Image.open("sample.jpg")
+augment = transforms.Compose([
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomRotation(degrees=30),
+    transforms.ColorJitter(brightness=0.2)
+])
+augmented_image = augment(image)
+</code></pre>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.1.2 Training with Image Augmentation</h3>
+                    <p class="mb-4">Augmentations are applied on-the-fly during training to enhance generalization.</p>
+                    <pre class="code-block"><code class="language-python">train_transforms = transforms.Compose([
+    transforms.RandomResizedCrop(224),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+</code></pre>
+                    <div class="mb-4">
+                        <h4 class="font-medium">🧠 Quiz: When to Apply Augmentations?</h4>
+                        <p>A) Training only<br>B) Validation only<br>C) Both<br>D) Neither</p>
+                        <button class="bg-green-600 text-white px-4 py-2 rounded" onclick="checkQuiz('14.1.2', 'A')">Submit Answer</button>
+                        <p id="quiz-14.1.2-result" class="mt-2 text-gray-600"></p>
+                    </div>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.1.3 Summary</h3>
+                    <ul class="list-disc pl-6">
+                        <li>Augmentation improves model robustness.</li>
+                        <li>Apply during training, not validation.</li>
+                        <li>Use task-specific transformations.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 14.2 Fine-Tuning -->
+            <section id="section-14.2" class="mb-12">
+                <h2 class="text-2xl font-semibold text-blue-800 mb-4">14.2 Fine-Tuning</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-medium mb-2">14.2.1 Steps</h3>
+                    <p class="mb-4">Fine-tuning adapts a pre-trained model to a new task:</p>
+                    <ol class="list-decimal pl-6 mb-4">
+                        <li>Load pre-trained model (e.g., ResNet).</li>
+                        <li>Modify output layer for new classes.</li>
+                        <li>Freeze early layers, train final layer.</li>
+                        <li>Unfreeze some layers for further tuning.</li>
+                    </ol>
+                    <pre class="code-block"><code class="language-python">import torchvision.models as models
+import torch.nn as nn
+
+model = models.resnet18(pretrained=True)
+for param in model.parameters():
+    param.requires_grad = False
+model.fc = nn.Linear(model.fc.in_features, 2)  # Binary classification
+</code></pre>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.2.2 Hot Dog Recognition</h3>
+                    <p class="mb-4">Classify images as "hot dog" or "not hot dog" using fine-tuning.</p>
+                    <div class="mb-4">
+                        <h4 class="font-medium">🍔 Hot Dog Classifier Demo</h4>
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="runHotDogDemo()">Run Demo</button>
+                        <p id="hotDogDemoResult" class="mt-2 text-gray-600">Click to classify a sample image...</p>
+                    </div>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.2.3 Summary</h3>
+                    <ul class="list-disc pl-6">
+                        <li>Fine-tuning leverages pre-trained models.</li>
+                        <li>Key for small datasets.</li>
+                        <li>Adjust learning rate carefully.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 14.3 Object Detection and Bounding Boxes -->
+            <section id="section-14.3" class="mb-12">
+                <h2 class="text-2xl font-semibold text-blue-800 mb-4">14.3 Object Detection and Bounding Boxes</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-medium mb-2">14.3.1 Bounding Boxes</h3>
+                    <p class="mb-4">Bounding boxes define object locations using coordinates [x_min, y_min, x_max, y_max].</p>
+                    <pre class="code-block"><code class="language-python">import cv2
+import matplotlib.pyplot as plt
+
+image = cv2.imread("sample.jpg")
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+bbox = [100, 50, 200, 150]
+cv2.rectangle(image, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 0), 2)
+plt.imshow(image)
+plt.show()
+</code></pre>
+                    <div class="mb-4">
+                        <h4 class="font-medium">📍 Bounding Box Visualizer</h4>
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="drawBoundingBox()">Draw Box</button>
+                        <p id="bboxStatus" class="mt-2 text-gray-600">Click to draw a sample bounding box...</p>
+                    </div>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.3.2 Summary</h3>
+                    <ul class="list-disc pl-6">
+                        <li>Bounding boxes are essential for object detection.</li>
+                        <li>Annotated using tools like LabelImg.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 14.4 Anchor Boxes -->
+            <section id="section-14.4" class="mb-12">
+                <h2 class="text-2xl font-semibold text-blue-800 mb-4">14.4 Anchor Boxes</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-medium mb-2">14.4.1 Generating Multiple Anchor Boxes</h3>
+                    <p class="mb-4">Anchor boxes are predefined boxes used as references in detection models.</p>
+                    <pre class="code-block"><code class="language-python">import numpy as np
+
+def generate_anchors(feature_map_size, sizes, ratios):
+    anchors = []
+    for i in range(feature_map_size[0]):
+        for j in range(feature_map_size[1]):
+            for size in sizes:
+                for ratio in ratios:
+                    w = size * np.sqrt(ratio)
+                    h = size / np.sqrt(ratio)
+                    x_center = (j + 0.5) * (320 / feature_map_size[1])
+                    y_center = (i + 0.5) * (320 / feature_map_size[0])
+                    anchors.append([x_center, y_center, w, h])
+    return np.array(anchors)
+
+anchors = generate_anchors((5, 5), sizes=[32, 64], ratios=[1, 2])
+</code></pre>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.4.2 Intersection over Union (IoU)</h3>
+                    <p class="mb-4">IoU measures overlap between two bounding boxes.</p>
+                    <pre class="code-block"><code class="language-python">def compute_iou(box1, box2):
+    x1 = max(box1[0], box2[0])
+    y1 = max(box1[1], box2[1])
+    x2 = min(box1[2], box2[2])
+    y2 = min(box1[3], box2[3])
+    intersection = max(0, x2 - x1) * max(0, y2 - y1)
+    area1 = (box1[2] - box1[0]) * (box1[3] - box1[1])
+    area2 = (box2[2] - box2[0]) * (box2[3] - box2[1])
+    union = area1 + area2 - intersection
+    return intersection / union if union > 0 else 0
+</code></pre>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.4.3 Labeling Anchor Boxes</h3>
+                    <p class="mb-4">Assign anchors to ground-truth boxes based on IoU thresholds.</p>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.4.4 Predicting with Non-Maximum Suppression</h3>
+                    <p class="mb-4">NMS removes duplicate detections.</p>
+                    <pre class="code-block"><code class="language-python">def nms(boxes, scores, iou_threshold=0.5):
+    keep = []
+    indices = np.argsort(scores)[::-1]
+    while indices.size > 0:
+        max_idx = indices[0]
+        keep.append(max_idx)
+        ious = np.array([compute_iou(boxes[max_idx], boxes[i]) for i in indices[1:]])
+        indices = indices[1:][ious < iou_threshold]
+    return keep
+</code></pre>
+                    <div class="mb-4">
+                        <h4 class="font-medium">🔍 NMS Demo</h4>
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="runNMSDemo()">Run NMS</button>
+                        <p id="nmsDemoResult" class="mt-2 text-gray-600">Click to apply NMS...</p>
+                    </div>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.4.5 Summary</h3>
+                    <ul class="list-disc pl-6">
+                        <li>Anchor boxes enable efficient detection.</li>
+                        <li>IoU and NMS are critical for accuracy.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 14.5 Multiscale Object Detection -->
+            <section id="section-14.5" class="mb-12">
+                <h2 class="text-2xl font-semibold text-blue-800 mb-4">14.5 Multiscale Object Detection</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <p class="mb-4">🔍 <strong>Why Multiscale Detection?</strong> Objects appear at different sizes in images. Multiscale detection uses feature maps at different resolutions to detect objects effectively.</p>
+
+                    <h3 class="text-xl font-medium mb-2">14.5.1 Multiscale Anchor Boxes</h3>
+                    <div class="mb-4">
+                        <h4 class="font-medium">📏 Multiscale Visualization</h4>
+                        <div class="flex space-x-4">
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="showScale('small')">🐭 Small Objects</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="showScale('medium')">🐱 Medium Objects</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="showScale('large')">🐘 Large Objects</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="showScale('all')">🌐 All Scales</button>
+                        </div>
+                        <div class="mt-4 grid grid-cols-3 gap-4">
+                            <div><p>Small Objects: <span id="smallCount">0</span></p></div>
+                            <div><p>Medium Objects: <span id="mediumCount">0</span></p></div>
+                            <div><p>Large Objects: <span id="largeCount">0</span></p></div>
+                        </div>
+                    </div>
+                    <pre class="code-block"><code class="language-python">import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class FPN(nn.Module):
+    def __init__(self, backbone):
+        super(FPN, self).__init__()
+        self.backbone = backbone
+        self.lateral_conv1 = nn.Conv2d(2048, 256, 1)
+        self.lateral_conv2 = nn.Conv2d(1024, 256, 1)
+        self.lateral_conv3 = nn.Conv2d(512, 256, 1)
+        self.output_conv1 = nn.Conv2d(256, 256, 3, padding=1)
+        self.output_conv2 = nn.Conv2d(256, 256, 3, padding=1)
+        self.output_conv3 = nn.Conv2d(256, 256, 3, padding=1)
+    
+    def forward(self, x):
+        c3, c4, c5 = self.backbone(x)
+        p5 = self.lateral_conv1(c5)
+        p4 = self.lateral_conv2(c4) + F.interpolate(p5, scale_factor=2, mode='nearest')
+        p3 = self.lateral_conv3(c3) + F.interpolate(p4, scale_factor=2, mode='nearest')
+        p3 = self.output_conv3(p3)
+        p4 = self.output_conv2(p4)
+        p5 = self.output_conv1(p5)
+        return [p3, p4, p5]
+</code></pre>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.5.2 Multiscale Detection</h3>
+                    <div class="mb-4">
+                        <h4 class="font-medium">🧠 Which feature map is best for detecting small objects?</h4>
+                        <p>A) Deep, low-resolution<br>B) Shallow, high-resolution<br>C) Only the final feature map<br>D) Feature maps don't matter</p>
+                        <button class="bg-green-600 text-white px-4 py-2 rounded" onclick="checkQuiz('14.5.2', 'B')">Submit Answer</button>
+                        <p id="quiz-14.5.2-result" class="mt-2 text-gray-600"></p>
+                    </div>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.5.3 Summary</h3>
+                    <ul class="list-disc pl-6">
+                        <li>Detects objects across different size ranges.</li>
+                        <li>Combines semantic and spatial information.</li>
+                        <li>Improves small object detection accuracy.</li>
+                        <li>Enables efficient single-shot detection.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 14.6 The Object Detection Dataset -->
+            <section id="section-14.6" class="mb-12">
+                <h2 class="text-2xl font-semibold text-blue-800 mb-4">14.6 The Object Detection Dataset</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <p class="mb-4">📊 <strong>Dataset Structure:</strong> Object detection datasets contain images with annotations specifying object locations and classes.</p>
+
+                    <h3 class="text-xl font-medium mb-2">14.6.1 Downloading the Dataset</h3>
+                    <div class="mb-4">
+                        <h4 class="font-medium">📥 Dataset Download Simulator</h4>
+                        <div class="flex space-x-4">
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="startDownload()">📥 Start Download</button>
+                            <button class="bg-green-600 text-white px-4 py-2 rounded" onclick="validateDataset()">✅ Validate Dataset</button>
+                            <button class="bg-red-600 text-white px-4 py-2 rounded" onclick="resetDownload()">🔄 Reset</button>
+                        </div>
+                        <p id="downloadStatus" class="mt-2 text-gray-600">Ready to download...</p>
+                    </div>
+                    <pre class="code-block"><code class="language-python">import torchvision.datasets as datasets
+from torch.utils.data import DataLoader
+
+def download_coco_dataset():
+    train_dataset = datasets.CocoDetection(
+        root='./data/coco/train2017',
+        annFile='./data/coco/annotations/instances_train2017.json'
+    )
+    val_dataset = datasets.CocoDetection(
+        root='./data/coco/val2017',
+        annFile='./data/coco/annotations/instances_val2017.json'
+    )
+    return train_dataset, val_dataset
+</code></pre>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.6.2 Reading the Dataset</h3>
+                    <div class="mb-4">
+                        <h4 class="font-medium">📖 Dataset Explorer</h4>
+                        <div class="grid grid-cols-4 gap-4">
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="loadSample(1)">Sample 1</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="loadSample(2)">Sample 2</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="loadSample(3)">Sample 3</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="loadSample(4)">Sample 4</button>
+                        </div>
+                        <div class="mt-4 grid grid-cols-3 gap-4">
+                            <div><p>Objects: <span id="objectCount">0</span></p></div>
+                            <div><p>Classes: <span id="classCount">0</span></p></div>
+                            <div><p>Image Size: <span id="imageSize">0x0</span></p></div>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.6.3 Demonstration</h3>
+                    <pre class="code-block"><code class="language-python">import torch
+from PIL import Image
+import os
+
+class DetectionDataset(torch.utils.data.Dataset):
+    def __init__(self, image_dir, annotation_file, transform=None):
+        self.image_dir = image_dir
+        self.annotations = self.load_annotations(annotation_file)
+        self.transform = transform
+    
+    def __len__(self):
+        return len(self.annotations)
+    
+    def __getitem__(self, idx):
+        image_path = os.path.join(self.image_dir, self.annotations[idx]['filename'])
+        image = Image.open(image_path).convert('RGB')
+        boxes = self.annotations[idx]['boxes']
+        labels = self.annotations[idx]['labels']
+        if self.transform:
+            image, boxes = self.transform(image, boxes)
+        return image, {'boxes': boxes, 'labels': labels}
+</code></pre>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.6.4 Summary</h3>
+                    <ul class="list-disc pl-6">
+                        <li>Ensure consistent annotation format.</li>
+                        <li>Validate data integrity before training.</li>
+                        <li>Use appropriate data augmentation.</li>
+                        <li>Balance class distribution.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 14.7 Single Shot Multibox Detection -->
+            <section id="section-14.7" class="mb-12">
+                <h2 class="text-2xl font-semibold text-blue-800 mb-4">14.7 Single Shot Multibox Detection (SSD)</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <p class="mb-4">🎯 <strong>SSD Architecture:</strong> SSD performs detection in a single forward pass using multiple feature maps.</p>
+
+                    <h3 class="text-xl font-medium mb-2">14.7.1 Model</h3>
+                    <div class="mb-4">
+                        <h4 class="font-medium">🏗️ SSD Architecture Visualizer</h4>
+                        <div class="flex space-x-4">
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded">🔧 Backbone</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded">🗺️ Feature Maps</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded">🎯 Detection Heads</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded">🏛️ Full Architecture</button>
+                        </div>
+                        <div class="mt-4 grid grid-cols-3 gap-4">
+                            <div><p>Feature Maps: <span>6</span></p></div>
+                            <div><p>Total Anchors: <span>8732</span></p></div>
+                            <div><p>Classes (VOC): <span>21</span></p></div>
+                        </div>
+                    </div>
+                    <pre class="code-block"><code class="language-python">import torch
+import torch.nn as nn
+
+class SSD(nn.Module):
+    def __init__(self, num_classes=21):
+        super(SSD, self).__init__()
+        self.num_classes = num_classes
+        self.backbone = self.build_backbone()
+        self.extra_layers = self.build_extra_layers()
+        self.loc_layers = self.build_loc_layers()
+        self.conf_layers = self.build_conf_layers()
+    
+    def forward(self, x):
+        sources = []
+        for layer in self.backbone:
+            x = layer(x)
+            if isinstance(layer, nn.MaxPool2d):
+                sources.append(x)
+        for layer in self.extra_layers:
+            x = layer(x)
+            sources.append(x)
+        locations, confidences = [], []
+        for i, source in enumerate(sources):
+            loc = self.loc_layers[i](source)
+            conf = self.conf_layers[i](source)
+            locations.append(loc.permute(0, 2, 3, 1).contiguous())
+            confidences.append(conf.permute(0, 2, 3, 1).contiguous())
+        return locations, confidences
+</code></pre>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.7.2 Training</h3>
+                    <div class="mb-4">
+                        <h4 class="font-medium">📈 Training Progress Simulator</h4>
+                        <div class="flex space-x-4">
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="startTraining()">🚀 Start Training</button>
+                            <button class="bg-yellow-600 text-white px-4 py-2 rounded" onclick="pauseTraining()">⏸️ Pause</button>
+                            <button class="bg-red-600 text-white px-4 py-2 rounded" onclick="resetTraining()">🔄 Reset</button>
+                        </div>
+                        <div class="mt-4 grid grid-cols-3 gap-4">
+                            <div><p>Epoch: <span id="epochCount">0</span></p></div>
+                            <div><p>Training Loss: <span id="trainingLoss">0.00</span></p></div>
+                            <div><p>Validation mAP: <span id="validationMap">0.00</span></p></div>
+                        </div>
+                    </div>
+                    <pre class="code-block"><code class="language-python">import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class SSDLoss(nn.Module):
+    def __init__(self, num_classes, alpha=1.0, neg_pos_ratio=3):
+        super(SSDLoss, self).__init__()
+        self.num_classes = num_classes
+        self.alpha = alpha
+        self.neg_pos_ratio = neg_pos_ratio
+    
+    def forward(self, predictions, targets):
+        loc_preds, conf_preds = predictions
+        pos_mask = targets['pos_mask']
+        loc_loss = F.smooth_l1_loss(
+            loc_preds[pos_mask], 
+            targets['loc_targets'][pos_mask],
+            reduction='sum'
+        )
+        conf_loss = self.hard_negative_mining(conf_preds, targets['conf_targets'])
+        num_pos = pos_mask.sum()
+        total_loss = (loc_loss + self.alpha * conf_loss) / num_pos
+        return total_loss
+</code></pre>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.7.3 Prediction</h3>
+                    <div class="mb-4">
+                        <h4 class="font-medium">🔍 Inference Demo</h4>
+                        <div class="flex space-x-4">
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="runDetection()">🔍 Run Detection</button>
+                            <button class="bg-yellow-600 text-white px-4 py-2 rounded" onclick="adjustThreshold()">⚖️ Adjust Threshold</button>
+                            <button class="bg-red-600 text-white px-4 py-2 rounded" onclick="clearDetection()">🧹 Clear</button>
+                        </div>
+                        <div class="mt-4">
+                            <label>Confidence Threshold:</label>
+                            <input type="range" min="0" max="1" step="0.01" value="0.5" id="confidenceThreshold" oninput="updateThreshold(this.value)">
+                            <span id="thresholdValue">0.50</span>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <h4 class="font-medium">🧠 What makes SSD "single shot"?</h4>
+                        <p>A) It only detects one object<br>B) It performs detection in one forward pass<br>C) It uses only one feature map<br>D) It has one detection head</p>
+                        <button class="bg-green-600 text-white px-4 py-2 rounded" onclick="checkQuiz('14.7.3', 'B')">Submit Answer</button>
+                        <p id="quiz-14.7.3-result" class="mt-2 text-gray-600"></p>
+                    </div>
+
+                    <h3 class="text-xl font-medium mt-6 mb-2">14.7.4 Summary</h3>
+                    <ul class="list-disc pl-6">
+                        <li>Single forward pass for detection.</li>
+                        <li>Multiple feature maps for multiscale detection.</li>
+                        <li>Anchor-based approach.</li>
+                        <li>Balances speed and accuracy.</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Sidebar toggle
+        document.getElementById('toggleSidebar').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('sidebar-hidden');
+            this.textContent = sidebar.classList.contains('sidebar-hidden') ? 'Show Sidebar' : 'Hide Sidebar';
+            document.querySelector('main').classList.toggle('ml-64');
+        });
+
+        // Augmentation Visualizer
+        function applyAugmentation(type) {
+            document.getElementById('augmentationStatus').textContent = `Applied ${type} augmentation!`;
+        }
+
+        // Quiz Checker
+        function checkQuiz(section, correctAnswer) {
+            const result = document.getElementById(`quiz-${section}-result`);
+            result.textContent = correctAnswer === document.querySelector(`input[name="quiz-${section}"]:checked`)?.value || correctAnswer 
+                ? 'Correct!' : 'Try again.';
+            result.className = correctAnswer === document.querySelector(`input[name="quiz-${section}"]:checked`)?.value || correctAnswer 
+                ? 'mt-2 text-green-600' : 'mt-2 text-red-600';
+        }
+
+        // Hot Dog Demo
+        function runHotDogDemo() {
+            document.getElementById('hotDogDemoResult').textContent = 'Classified as Hot Dog!';
+        }
+
+        // Bounding Box Visualizer
+        function drawBoundingBox() {
+            document.getElementById('bboxStatus').textContent = 'Bounding box drawn!';
+        }
+
+        // NMS Demo
+        function runNMSDemo() {
+            document.getElementById('nmsDemoResult').textContent = 'NMS applied, duplicates removed!';
+        }
+
+        // Multiscale Visualization
+        function showScale(scale) {
+            document.getElementById('smallCount').textContent = scale === 'small' || scale === 'all' ? '10' : '0';
+            document.getElementById('mediumCount').textContent = scale === 'medium' || scale === 'all' ? '15' : '0';
+            document.getElementById('largeCount').textContent = scale === 'large' || scale === 'all' ? '5' : '0';
+        }
+
+        // Dataset Download Simulator
+        function startDownload() {
+            document.getElementById('downloadStatus').textContent = 'Downloading COCO dataset...';
+        }
+        function validateDataset() {
+            document.getElementById('downloadStatus').textContent = 'Dataset validated!';
+        }
+        function resetDownload() {
+            document.getElementById('downloadStatus').textContent = 'Ready to download...';
+        }
+
+        // Dataset Explorer
+        function loadSample(sample) {
+            document.getElementById('objectCount').textContent = sample * 2;
+            document.getElementById('classCount').textContent = sample;
+            document.getElementById('imageSize').textContent = `${sample * 100}x${sample * 100}`;
+        }
+
+        // Training Simulator
+        let trainingInterval;
+        function startTraining() {
+            let epoch = 0, loss = 5.0, map = 0.0;
+            trainingInterval = setInterval(() => {
+                epoch++;
+                loss = Math.max(0.1, loss - 0.1).toFixed(2);
+                map = Math.min(0.9, map + 0.05).toFixed(2);
+                document.getElementById('epochCount').textContent = epoch;
+                document.getElementById('trainingLoss').textContent = loss;
+                document.getElementById('validationMap').textContent = map;
+            }, 1000);
+        }
+        function pauseTraining() {
+            clearInterval(trainingInterval);
+        }
+        function resetTraining() {
+            clearInterval(trainingInterval);
+            document.getElementById('epochCount').textContent = '0';
+            document.getElementById('trainingLoss').textContent = '0.00';
+            document.getElementById('validationMap').textContent = '0.00';
+        }
+
+        // Inference Demo
+        function runDetection() {
+            document.getElementById('thresholdValue').textContent = document.getElementById('confidenceThreshold').value;
+        }
+        function adjustThreshold() {
+            document.getElementById('thresholdValue').textContent = document.getElementById('confidenceThreshold').value;
+        }
+        function clearDetection() {
+            document.getElementById('thresholdValue').textContent = '0.50';
+            document.getElementById('confidenceThreshold').value = 0.5;
+        }
+        function updateThreshold(value) {
+            document.getElementById('thresholdValue').textContent = parseFloat(value).toFixed(2);
+        }
+    </script>
+</body>
+</html>
